@@ -3,212 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="JOSAA College Preference List Generator - Get personalized college recommendations with admission probability predictions">
     <title>JOSAA College Preference List Generator</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.2/plotly.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f8f9fa;
-            color: #006B6B;
-        }
-        .main-header {
-            background: linear-gradient(135deg, #006B6B, #005555);
-            padding: 2rem;
-            border-radius: 15px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
-        }
-        .main-header h1 {
-            color: #ffffff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        .main-header h3 {
-            color: #D4AF37;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-        }
-        .input-section {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.15);
-            margin-bottom: 2rem;
-        }
-        .button-row {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-        .output-section {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.15);
-            margin-bottom: 2rem;
-        }
-        .info-section {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            margin-top: 2rem;
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.15);
-        }
-        .btn-primary {
-            background-color: #006B6B;
-            border-color: #006B6B;
-        }
-        .btn-primary:hover {
-            background-color: #005555;
-            border-color: #005555;
-        }
-        .btn-secondary {
-            background-color: #D4AF37;
-            border-color: #D4AF37;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #B8960C;
-            border-color: #B8960C;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #006B6B;
-            box-shadow: 0 0 0 0.25rem rgba(0, 107, 107, 0.25);
-        }
-        .table-responsive {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        #plot-container {
-            width: 100%;
-            height: 400px;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner-border {
-            color: #006B6B;
-        }
-    </style>
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.plot.ly">
 </head>
 <body>
+    <!-- Error Alert Container -->
+    <div id="error-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1060;"></div>
+
     <div class="container py-4">
         <div class="main-header">
             <h1 class="text-center">🎓 JOSAA College Preference List Generator</h1>
             <h3 class="text-center">Get personalized college recommendations with admission probability predictions</h3>
         </div>
 
-        <div class="input-section">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="college-type" class="form-label">Select College Type</label>
-                        <select class="form-select" id="college-type">
-                            <option value="ALL">ALL</option>
-                            <option value="IIT">IIT</option>
-                            <option value="NIT">NIT</option>
-                            <option value="IIIT">IIIT</option>
-                            <option value="GFTI">GFTI</option>
-                        </select>
+        <form id="preference-form" class="needs-validation" novalidate>
+            <div class="input-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="college-type" class="form-label">Select College Type</label>
+                            <select class="form-select" id="college-type" name="college-type" required 
+                                    data-bs-toggle="tooltip" data-bs-placement="top" 
+                                    title="Select the type of college you're interested in">
+                                <option value="">Select College Type</option>
+                                <!-- Options will be populated via JavaScript -->
+                            </select>
+                            <div class="invalid-feedback">Please select a college type.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jee-rank" class="form-label" id="rank-label">
+                                Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)
+                            </label>
+                            <input type="number" class="form-control" id="jee-rank" name="jee-rank"
+                                   min="1" required placeholder="Enter your rank"
+                                   data-bs-toggle="tooltip" data-bs-placement="top"
+                                   title="Enter your JEE rank according to the selected college type">
+                            <div class="invalid-feedback">Please enter a valid rank (greater than 0).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Select Category</label>
+                            <select class="form-select" id="category" name="category" required
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Select your admission category">
+                                <option value="">Select Category</option>
+                                <!-- Options will be populated via JavaScript -->
+                            </select>
+                            <div class="invalid-feedback">Please select a category.</div>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="jee-rank" class="form-label" id="rank-label">Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)</label>
-                        <input type="number" class="form-control" id="jee-rank" min="1">
-                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
+                            <select class="form-select" id="preferred-branch" name="preferred-branch" required
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Select your preferred branch of study">
+                                <option value="">Select Branch</option>
+                                <!-- Options will be populated via JavaScript -->
+                            </select>
+                            <div class="invalid-feedback">Please select a branch.</div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="category" class="form-label">Select Category</label>
-                        <select class="form-select" id="category">
-                            <option value="All">All</option>
-                            <option value="OPEN">OPEN</option>
-                            <option value="OBC-NCL">OBC-NCL</option>
-                            <option value="OBC-NCL (PwD)">OBC-NCL (PwD)</option>
-                            <option value="EWS">EWS</option>
-                            <option value="EWS (PwD)">EWS (PwD)</option>
-                            <option value="SC">SC</option>
-                            <option value="SC (PwD)">SC (PwD)</option>
-                            <option value="ST">ST</option>
-                            <option value="ST (PwD)">ST (PwD)</option>
-                        </select>
-                    </div>
-                </div>
+                        <div class="mb-3">
+                            <label for="round-no" class="form-label">Select Round</label>
+                            <select class="form-select" id="round-no" name="round-no" required
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Select the counselling round">
+                                <option value="">Select Round</option>
+                                <!-- Options will be populated via JavaScript -->
+                            </select>
+                            <div class="invalid-feedback">Please select a round.</div>
+                        </div>
 
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
-                        <select class="form-select" id="preferred-branch">
-                            <option value="All">All</option>
-                            <!-- Branches will be loaded dynamically -->
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="round-no" class="form-label">Select Round</label>
-                        <select class="form-select" id="round-no">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="min-prob" class="form-label">Minimum Admission Probability (%): <span id="prob-value">30</span></label>
-                        <input type="range" class="form-range" id="min-prob" min="0" max="100" step="5" value="30">
+                        <div class="mb-3">
+                            <label for="min-prob" class="form-label">
+                                Minimum Admission Probability (%): <span id="prob-value">30</span>
+                            </label>
+                            <input type="range" class="form-range" id="min-prob" name="min-prob"
+                                   min="0" max="100" step="5" value="30"
+                                   data-bs-toggle="tooltip" data-bs-placement="top"
+                                   title="Set the minimum probability threshold for college suggestions">
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="button-row">
-            <button id="generate-btn" class="btn btn-primary btn-lg"><i class="fas fa-search"></i> Generate Preferences</button>
-            <button id="download-btn" class="btn btn-secondary btn-lg" disabled><i class="fas fa-download"></i> Download Excel</button>
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div class="button-row">
+                <button type="submit" id="generate-btn" class="btn btn-primary btn-lg">
+                    <span class="button-content">
+                        <i class="fas fa-search"></i> Generate Preferences
+                    </span>
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+                <button type="button" id="download-btn" class="btn btn-secondary btn-lg" disabled>
+                    <i class="fas fa-download"></i> Download Excel
+                </button>
             </div>
-            <p class="mt-2">Generating your preferences, please wait...</p>
+        </form>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none">
+            <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Generating your preferences...</p>
+            </div>
         </div>
 
+        <!-- Results Section -->
         <div class="output-section" id="output-section" style="display: none;">
             <h4>College Preferences</h4>
             <div class="table-responsive">
                 <table class="table table-striped table-hover" id="results-table">
                     <thead>
                         <tr>
-                            <th>Preference</th>
-                            <th>Institute</th>
-                            <th>College Type</th>
-                            <th>Location</th>
-                            <th>Branch</th>
-                            <th>Opening Rank</th>
-                            <th>Closing Rank</th>
-                            <th>Admission Probability (%)</th>
-                            <th>Admission Chances</th>
+                            <th scope="col">Preference</th>
+                            <th scope="col">Institute</th>
+                            <th scope="col">College Type</th>
+                            <th scope="col">Location</th>
+                            <th scope="col">Branch</th>
+                            <th scope="col">Opening Rank</th>
+                            <th scope="col">Closing Rank</th>
+                            <th scope="col">Admission Probability (%)</th>
+                            <th scope="col">Admission Chances</th>
                         </tr>
                     </thead>
-                    <tbody id="results-body">
-                        <!-- Results will be loaded here -->
-                    </tbody>
+                    <tbody id="results-body"></tbody>
                 </table>
             </div>
 
             <div class="mt-4">
                 <h4>Probability Distribution</h4>
-                <div id="plot-container"></div>
+                <div id="plot-container" style="width: 100%; height: 400px;"></div>
             </div>
         </div>
 
-        <div class="info-section">
+        <div class="info-section mt-4">
             <h3>📚 How to use this tool:</h3>
             <ol>
                 <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
@@ -240,220 +185,11 @@
         </div>
     </div>
 
-    <script>
-        // Global variables to store data
-        let currentResults = null;
-        let uniqueBranches = ["All"];
-        const API_URL = "https://josaa-preference.onrender.com";
-
-        // Function to load branches
-        async function loadBranches() {
-            try {
-                // First try to fetch data from josaa2024_cutoff.csv on GitHub
-                const response = await fetch('https://raw.githubusercontent.com/JARAWA/JOSAA_preference/refs/heads/main/josaa2024_cutoff.csv');
-                const csvText = await response.text();
-                
-                // Extract unique branches from CSV
-                const lines = csvText.split('\n');
-                const headers = lines[0].split(',');
-                const branchIndex = headers.findIndex(h => h.trim() === 'Academic Program Name');
-                
-                if (branchIndex > -1) {
-                    const branchSet = new Set();
-                    
-                    for (let i = 1; i < lines.length; i++) {
-                        if (lines[i].trim() === '') continue;
-                        
-                        // Handle potential commas within quoted fields
-                        let values = [];
-                        let inQuotes = false;
-                        let currentValue = '';
-                        
-                        for (let char of lines[i]) {
-                            if (char === '"') {
-                                inQuotes = !inQuotes;
-                            } else if (char === ',' && !inQuotes) {
-                                values.push(currentValue);
-                                currentValue = '';
-                            } else {
-                                currentValue += char;
-                            }
-                        }
-                        values.push(currentValue); // Add the last value
-                        
-                        if (values[branchIndex] && values[branchIndex].trim() !== '') {
-                            branchSet.add(values[branchIndex].trim());
-                        }
-                    }
-                    
-                    uniqueBranches = ["All", ...Array.from(branchSet).sort()];
-                }
-            } catch (error) {
-                console.error("Error loading branches:", error);
-            }
-            
-            // Populate the dropdown
-            const branchSelect = document.getElementById('preferred-branch');
-            branchSelect.innerHTML = uniqueBranches.map(branch => 
-                `<option value="${branch}">${branch}</option>`
-            ).join('');
-        }
-
-        // Update rank label when college type changes
-        document.getElementById('college-type').addEventListener('change', function() {
-            const rankLabel = document.getElementById('rank-label');
-            if (this.value === 'IIT') {
-                rankLabel.textContent = 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)';
-            } else {
-                rankLabel.textContent = 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
-            }
-        });
-
-        // Update probability slider value display
-        document.getElementById('min-prob').addEventListener('input', function() {
-            document.getElementById('prob-value').textContent = this.value;
-        });
-
-        // Generate preferences function
-        document.getElementById('generate-btn').addEventListener('click', async function() {
-            const jeeRank = document.getElementById('jee-rank').value;
-            const category = document.getElementById('category').value;
-            const collegeType = document.getElementById('college-type').value;
-            const preferredBranch = document.getElementById('preferred-branch').value;
-            const roundNo = document.getElementById('round-no').value;
-            const minProb = document.getElementById('min-prob').value;
-            
-            // Validate inputs
-            if (!jeeRank || jeeRank <= 0) {
-                alert('Please enter a valid rank');
-                return;
-            }
-            
-            // Show loading spinner
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('output-section').style.display = 'none';
-            document.getElementById('download-btn').disabled = true;
-            
-            try {
-                // Make API request
-                const response = await fetch(`${API_URL}/predict`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        jee_rank: parseInt(jeeRank),
-                        category: category,
-                        college_type: collegeType,
-                        preferred_branch: preferredBranch,
-                        round_no: roundNo,
-                        min_probability: parseFloat(minProb)
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                // Handle successful response
-                if (data.preferences && data.preferences.length > 0) {
-                    // Store results
-                    currentResults = data.preferences;
-                    
-                    // Populate table
-                    const tableBody = document.getElementById('results-body');
-                    tableBody.innerHTML = '';
-                    
-                    data.preferences.forEach(pref => {
-                        const row = tableBody.insertRow();
-                        row.insertCell().textContent = pref.Preference;
-                        row.insertCell().textContent = pref.Institute;
-                        row.insertCell().textContent = pref['College Type'];
-                        row.insertCell().textContent = pref.Location;
-                        row.insertCell().textContent = pref.Branch;
-                        row.insertCell().textContent = pref['Opening Rank'];
-                        row.insertCell().textContent = pref['Closing Rank'];
-                        row.insertCell().textContent = pref['Admission Probability (%)'];
-                        row.insertCell().textContent = pref['Admission Chances'];
-                    });
-                    
-                    // Show plot if available
-                    if (data.plot_data) {
-                        // Create histogram using Plotly
-                        const plotData = [{
-                            x: data.preferences.map(item => item['Admission Probability (%)']),
-                            type: 'histogram',
-                            marker: {
-                                color: '#3366cc'
-                            },
-                            nbinsx: 20
-                        }];
-                        
-                        const layout = {
-                            title: 'Distribution of Admission Probabilities',
-                            xaxis: {
-                                title: 'Admission Probability (%)'
-                            },
-                            yaxis: {
-                                title: 'Number of Colleges'
-                            },
-                            showlegend: false
-                        };
-                        
-                        Plotly.newPlot('plot-container', plotData, layout);
-                    }
-                    
-                    // Enable download button
-                    document.getElementById('download-btn').disabled = false;
-                    
-                    // Show results section
-                    document.getElementById('output-section').style.display = 'block';
-                } else {
-                    // Handle empty results
-                    document.getElementById('results-body').innerHTML = `
-                        <tr>
-                            <td colspan="9" class="text-center">No colleges found matching your criteria</td>
-                        </tr>
-                    `;
-                    document.getElementById('output-section').style.display = 'block';
-                }
-            } catch (error) {
-                console.error("Error generating preferences:", error);
-                alert(`Error: ${error.message}`);
-            } finally {
-                // Hide loading spinner
-                document.getElementById('loading').style.display = 'none';
-            }
-        });
-
-        // Download Excel function
-        document.getElementById('download-btn').addEventListener('click', function() {
-            if (!currentResults || currentResults.length === 0) {
-                alert('No data to download');
-                return;
-            }
-            
-            // Create worksheet
-            const worksheet = XLSX.utils.json_to_sheet(currentResults);
-            
-            // Create workbook
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'JOSAA Preferences');
-            
-            // Generate Excel file
-            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            
-            // Create Blob and download
-            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            saveAs(blob, `JOSAA_Preferences_${new Date().toISOString().split('T')[0]}.xlsx`);
-        });
-
-        // Initialize the application
-        window.addEventListener('DOMContentLoaded', function() {
-            loadBranches();
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
