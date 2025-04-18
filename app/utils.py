@@ -17,7 +17,7 @@ def load_data() -> Optional[pd.DataFrame]:
     """
     try:
         # GitHub raw content URL for the CSV file
-        url = "https://raw.githubusercontent.com/JARAWA/JOSAA_preference/refs/heads/main/josaa2024_cutoff.csv"
+        url = "https://raw.githubusercontent.com/JARAWA/JOSSA18042025/refs/heads/main/josaa2024_cutoff.csv"
         
         # Fetch data from GitHub
         response = requests.get(url)
