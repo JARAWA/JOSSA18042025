@@ -9,8 +9,8 @@ import pandas as pd
 from pathlib import Path
 import os
 
-# Get the base directory
-BASE_DIR = Path(__file__).resolve().parent
+# Get the base directory (parent of app directory)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize FastAPI app
 app = FastAPI(
