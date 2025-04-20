@@ -243,3 +243,36 @@ body {
         color: black !important;
     }
 }
+
+/* Table sorting styles */
+.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px !important;
+}
+
+.sortable i {
+    position: absolute;
+    right: 5px;
+    color: #999;
+}
+
+.sortable.asc i {
+    color: #000;
+}
+
+.sortable.desc i {
+    color: #000;
+}
+
+.sortable.asc i::before {
+    content: "\f0de" !important;  /* fa-sort-up */
+}
+
+.sortable.desc i::before {
+    content: "\f0dd" !important;  /* fa-sort-down */
+}
+
+.sortable:hover {
+    background-color: #f8f9fa;
+}
