@@ -9,8 +9,9 @@ import pandas as pd
 from pathlib import Path
 import os
 
-# Get the base directory (parent of app directory)
+# Get the absolute path to the base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Initialize FastAPI app
 app = FastAPI(
