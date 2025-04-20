@@ -11,6 +11,8 @@ const ENDPOINTS = {
 // Global Variables
 let currentResults = null;
 let tooltipInstances = [];
+let currentSortColumn = null;
+let isAscending = true;
 
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -70,6 +72,100 @@ function initializeEventListeners() {
     
     // Download button
     document.getElementById('download-btn').addEventListener('click', handleDownload);
+    
+    // Initialize table header click events for sorting
+    initializeTableSorting();
+}
+
+// Initialize table sorting
+function initializeTableSorting() {
+    const resultsTable = document.getElementById('results-table');
+    const headerRow = resultsTable.querySelector('thead tr');
+    
+    if (headerRow) {
+        const headerCells = headerRow.querySelectorAll('th');
+        headerCells.forEach((cell, columnIndex) => {
+            cell.addEventListener('click', () => handleSortClick(columnIndex));
+            cell.style.cursor = 'pointer';
+            // Add sort indicator elements
+            const sortIndicator = document.createElement('span');
+            sortIndicator.className = 'sort-indicator ms-1';
+            sortIndicator.innerHTML = '⇅';
+            cell.appendChild(sortIndicator);
+        });
+    }
+}
+
+// Handle sort click
+function handleSortClick(columnIndex) {
+    if (currentResults && currentResults.length > 0) {
+        // Toggle sort direction if clicking the same column
+        if (currentSortColumn === columnIndex) {
+            isAscending = !isAscending;
+        } else {
+            currentSortColumn = columnIndex;
+            isAscending = true;
+        }
+        
+        sortTable(columnIndex, isAscending);
+        updateSortIndicators(columnIndex, isAscending);
+    }
+}
+
+// Sort table by column
+function sortTable(columnIndex, ascending) {
+    if (!currentResults || currentResults.length === 0) return;
+    
+    const columnKeys = Object.keys(currentResults[0]);
+    const columnKey = columnKeys[columnIndex];
+    
+    currentResults.sort((a, b) => {
+        let valueA = a[columnKey];
+        let valueB = b[columnKey];
+        
+        // Check if values are numeric
+        const isNumeric = !isNaN(parseFloat(valueA)) && !isNaN(parseFloat(valueB));
+        
+        if (isNumeric) {
+            valueA = parseFloat(valueA);
+            valueB = parseFloat(valueB);
+        } else {
+            valueA = String(valueA).toLowerCase();
+            valueB = String(valueB).toLowerCase();
+        }
+        
+        if (valueA < valueB) return ascending ? -1 : 1;
+        if (valueA > valueB) return ascending ? 1 : -1;
+        return 0;
+    });
+    
+    // Redisplay sorted results
+    const tableBody = document.getElementById('results-body');
+    tableBody.innerHTML = '';
+    
+    currentResults.forEach(pref => {
+        const row = tableBody.insertRow();
+        Object.values(pref).forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = value;
+        });
+    });
+}
+
+// Update sort indicators in the table header
+function updateSortIndicators(activeColumnIndex, ascending) {
+    const headerCells = document.querySelectorAll('#results-table thead th');
+    
+    headerCells.forEach((cell, index) => {
+        const indicator = cell.querySelector('.sort-indicator');
+        if (index === activeColumnIndex) {
+            indicator.innerHTML = ascending ? '↑' : '↓';
+            indicator.classList.add('active');
+        } else {
+            indicator.innerHTML = '⇅';
+            indicator.classList.remove('active');
+        }
+    });
 }
 
 // Form Submission Handler
@@ -120,6 +216,11 @@ function handlePredictionResponse(data) {
     currentResults = data.preferences;
     displayResults(data);
     document.getElementById('download-btn').disabled = false;
+    
+    // Reset sorting state when new results are displayed
+    currentSortColumn = null;
+    isAscending = true;
+    updateSortIndicators(-1, true);
 }
 
 // Results Display
