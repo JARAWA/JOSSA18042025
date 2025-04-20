@@ -11,6 +11,7 @@ import os
 
 # Get the directory containing the current file (app directory)
 CURRENT_DIR = Path(__file__).parent
+BASE_DIR = CURRENT_DIR.parent
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -19,10 +20,55 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Setup static files and templates
-app.mount("/static", StaticFiles(directory=str(CURRENT_DIR / "static")), name="static")
+# Setup static files - try multiple possible locations
+static_dirs = [
+    CURRENT_DIR / "static",
+    BASE_DIR / "static",
+]
+
+static_dir = None
+for dir_path in static_dirs:
+    if dir_path.exists():
+        static_dir = dir_path
+        break
+
+if static_dir is None:
+    raise RuntimeError("Cannot find static directory")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# Setup templates
 templates = Jinja2Templates(directory=str(CURRENT_DIR / "templates"))
 
+@app.on_event("startup")
+async def startup_event():
+    print("=== Debug Information ===")
+    print(f"Current directory: {CURRENT_DIR}")
+    print(f"Base directory: {BASE_DIR}")
+    print(f"Static directory: {static_dir}")
+    print(f"Static directory exists: {static_dir.exists()}")
+    if static_dir.exists():
+        print(f"Static directory contents: {list(static_dir.glob('**/*'))}")
+    print(f"Templates directory: {CURRENT_DIR / 'templates'}")
+    print(f"Templates directory exists: {(CURRENT_DIR / 'templates').exists()}")
+    if (CURRENT_DIR / 'templates').exists():
+        print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').glob('*'))}")
+    print("=== End Debug Information ===")
+
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    try:
+        return templates.TemplateResponse(
+            "index.html", 
+            {
+                "request": request,
+                "static_url": "/static/"  # Add this to help debug static file paths
+            }
+        )
+    except Exception as e:
+        print(f"Error in root endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 # Add debugging
 @app.on_event("startup")
 async def startup_event():
