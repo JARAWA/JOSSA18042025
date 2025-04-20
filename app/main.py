@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request  # Add Request here
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -53,6 +53,7 @@ class PredictionResponse(BaseModel):
 async def root(request: Request):
     """Serve the main application page"""
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.get("/api/health")
 async def health_check():
