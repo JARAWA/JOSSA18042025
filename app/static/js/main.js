@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     initializeEventListeners();
     initializeTooltips();
-    initializeSorting();
 });
 
 // App Initialization
@@ -113,19 +112,14 @@ async function handleFormSubmit(event) {
 
 // Response Handler
 function handlePredictionResponse(data) {
-    if (!data || !data.preferences || !Array.isArray(data.preferences) || data.preferences.length === 0) {
+    if (!data.preferences || data.preferences.length === 0) {
         showError('No colleges found matching your criteria.');
         return;
     }
 
-    try {
-        currentResults = data.preferences;
-        displayResults(data);
-        document.getElementById('download-btn').disabled = false;
-    } catch (error) {
-        console.error('Error displaying results:', error);
-        showError('Error displaying results. Please try again.');
-    }
+    currentResults = data.preferences;
+    displayResults(data);
+    document.getElementById('download-btn').disabled = false;
 }
 
 // Results Display
@@ -137,23 +131,12 @@ function displayResults(data) {
     tableBody.innerHTML = '';
     
     // Populate table
-    data.preferences.forEach((pref, index) => {
-        // Ensure probability is a number and handle undefined/null cases
-        const probability = typeof pref.probability === 'number' ? pref.probability : 0;
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${pref.institute || '-'}</td>
-            <td>${pref.college_type || '-'}</td>
-            <td>${pref.location || '-'}</td>
-            <td>${pref.branch || '-'}</td>
-            <td>${pref.opening_rank || '-'}</td>
-            <td>${pref.closing_rank || '-'}</td>
-            <td>${probability.toFixed(2)}</td>
-            <td>${getAdmissionChancesBadge(probability)}</td>
-        `;
-        tableBody.appendChild(tr);
+    data.preferences.forEach(pref => {
+        const row = tableBody.insertRow();
+        Object.values(pref).forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = value;
+        });
     });
 
     // Create plot if data available
@@ -245,31 +228,6 @@ function setLoadingState(isLoading) {
     }
 }
 
-// Utility Functions
-function handleCollegeTypeChange(event) {
-    const rankLabel = document.getElementById('rank-label');
-    rankLabel.textContent = event.target.value === 'IIT' 
-        ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
-        : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
-}
-
-function handleProbabilityChange(event) {
-    document.getElementById('prob-value').textContent = event.target.value;
-}
-
-function getAdmissionChancesBadge(probability) {
-    // Ensure probability is a number
-    probability = typeof probability === 'number' ? probability : 0;
-    
-    if (probability >= 80) {
-        return '<span class="badge bg-success">High</span>';
-    } else if (probability >= 50) {
-        return '<span class="badge bg-warning text-dark">Medium</span>';
-    } else {
-        return '<span class="badge bg-danger">Low</span>';
-    }
-}
-
 // Error Handling
 function showError(message) {
     const alertContainer = document.getElementById('error-alert-container');
@@ -287,76 +245,23 @@ function showError(message) {
     }, 5000);
 }
 
-// Initialize Tooltips
+// Utility Functions
+function handleCollegeTypeChange(event) {
+    const rankLabel = document.getElementById('rank-label');
+    rankLabel.textContent = event.target.value === 'IIT' 
+        ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
+        : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
+}
+
+function handleProbabilityChange(event) {
+    document.getElementById('prob-value').textContent = event.target.value;
+}
+
 function initializeTooltips() {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipInstances = tooltipTriggerList.map(function(tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-}
-
-// Table Sorting Functionality
-function initializeSorting() {
-    const table = document.getElementById('results-table');
-    const headers = table.querySelectorAll('th.sortable');
-    
-    headers.forEach(header => {
-        header.addEventListener('click', function() {
-            const column = this.dataset.sort;
-            const isAsc = !this.classList.contains('asc');
-            
-            // Remove sorting classes from all headers
-            headers.forEach(h => {
-                h.classList.remove('asc', 'desc');
-                h.querySelector('i').className = 'fas fa-sort';
-            });
-            
-            // Add sorting class to clicked header
-            this.classList.add(isAsc ? 'asc' : 'desc');
-            this.querySelector('i').className = `fas fa-sort-${isAsc ? 'up' : 'down'}`;
-            
-            sortTable(column, isAsc);
-        });
-    });
-}
-
-function sortTable(column, isAsc) {
-    const tbody = document.getElementById('results-body');
-    const rows = Array.from(tbody.getElementsByTagName('tr'));
-    
-    rows.sort((a, b) => {
-        let aValue = getCellValue(a, column);
-        let bValue = getCellValue(b, column);
-        
-        // Handle numeric values
-        if (column === 'preference' || column === 'openingRank' || 
-            column === 'closingRank' || column === 'probability') {
-            aValue = parseFloat(aValue) || 0;
-            bValue = parseFloat(bValue) || 0;
-        }
-        
-        if (aValue === bValue) return 0;
-        return (aValue > bValue ? 1 : -1) * (isAsc ? 1 : -1);
-    });
-    
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-function getCellValue(row, column) {
-    const columnMap = {
-        'preference': 0,
-        'institute': 1,
-        'collegeType': 2,
-        'location': 3,
-        'branch': 4,
-        'openingRank': 5,
-        'closingRank': 6,
-        'probability': 7,
-        'chances': 8
-    };
-    
-    const cell = row.getElementsByTagName('td')[columnMap[column]];
-    return cell.textContent.trim();
 }
 
 // Clean up function for tooltips
