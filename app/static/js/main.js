@@ -113,14 +113,19 @@ async function handleFormSubmit(event) {
 
 // Response Handler
 function handlePredictionResponse(data) {
-    if (!data.preferences || data.preferences.length === 0) {
+    if (!data || !data.preferences || !Array.isArray(data.preferences) || data.preferences.length === 0) {
         showError('No colleges found matching your criteria.');
         return;
     }
 
-    currentResults = data.preferences;
-    displayResults(data);
-    document.getElementById('download-btn').disabled = false;
+    try {
+        currentResults = data.preferences;
+        displayResults(data);
+        document.getElementById('download-btn').disabled = false;
+    } catch (error) {
+        console.error('Error displaying results:', error);
+        showError('Error displaying results. Please try again.');
+    }
 }
 
 // Results Display
@@ -133,17 +138,20 @@ function displayResults(data) {
     
     // Populate table
     data.preferences.forEach((pref, index) => {
+        // Ensure probability is a number and handle undefined/null cases
+        const probability = typeof pref.probability === 'number' ? pref.probability : 0;
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${index + 1}</td>
-            <td>${pref.institute}</td>
-            <td>${pref.college_type}</td>
+            <td>${pref.institute || '-'}</td>
+            <td>${pref.college_type || '-'}</td>
             <td>${pref.location || '-'}</td>
-            <td>${pref.branch}</td>
-            <td>${pref.opening_rank}</td>
-            <td>${pref.closing_rank}</td>
-            <td>${pref.probability.toFixed(2)}</td>
-            <td>${getAdmissionChancesBadge(pref.probability)}</td>
+            <td>${pref.branch || '-'}</td>
+            <td>${pref.opening_rank || '-'}</td>
+            <td>${pref.closing_rank || '-'}</td>
+            <td>${probability.toFixed(2)}</td>
+            <td>${getAdmissionChancesBadge(probability)}</td>
         `;
         tableBody.appendChild(tr);
     });
@@ -250,6 +258,9 @@ function handleProbabilityChange(event) {
 }
 
 function getAdmissionChancesBadge(probability) {
+    // Ensure probability is a number
+    probability = typeof probability === 'number' ? probability : 0;
+    
     if (probability >= 80) {
         return '<span class="badge bg-success">High</span>';
     } else if (probability >= 50) {
