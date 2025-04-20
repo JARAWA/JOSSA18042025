@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request  # Add Request here
+rom fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,13 +7,10 @@ from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
 from pathlib import Path
-from .utils import (
-    load_data,
-    get_unique_branches,
-    validate_inputs,
-    generate_preference_list,
-    get_probability_interpretation
-)
+import os
+
+# Get the base directory
+BASE_DIR = Path(__file__).resolve().parent
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -23,8 +20,8 @@ app = FastAPI(
 )
 
 # Setup static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Configure CORS
 app.add_middleware(
