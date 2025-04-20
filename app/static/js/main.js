@@ -46,7 +46,21 @@ async function populateDropdown(elementId, endpoint) {
         const select = document.getElementById(elementId);
         select.innerHTML = '<option value="">Select option</option>';
         
-        const options = data[Object.keys(data)[0]]; // Get first property of response object
+        // Handle different possible API response structures
+        let options = [];
+        if (Array.isArray(data)) {
+            options = data;
+        } else if (typeof data === 'object') {
+            // If data is an object, get the first property's array value
+            const firstKey = Object.keys(data)[0];
+            if (Array.isArray(data[firstKey])) {
+                options = data[firstKey];
+            } else {
+                // If the structure is different, try to extract options from the response
+                options = Object.values(data).find(val => Array.isArray(val)) || [];
+            }
+        }
+        
         options.forEach(option => {
             const optElement = document.createElement('option');
             optElement.value = option;
