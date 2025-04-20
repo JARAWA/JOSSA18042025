@@ -5,7 +5,12 @@ services:
     buildCommand: |
       python -m pip install --upgrade pip
       pip install --no-cache-dir -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: |
+      mkdir -p /opt/render/project/src/static
+      mkdir -p /opt/render/project/src/templates
+      cp -r static/* /opt/render/project/src/static/
+      cp -r templates/* /opt/render/project/src/templates/
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
