@@ -9,9 +9,8 @@ import pandas as pd
 from pathlib import Path
 import os
 
-# Get the absolute path to the base directory
-BASE_DIR = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+# Get the directory containing the current file (app directory)
+CURRENT_DIR = Path(__file__).parent
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -21,8 +20,35 @@ app = FastAPI(
 )
 
 # Setup static files and templates
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(CURRENT_DIR / "static")), name="static")
+templates = Jinja2Templates(directory=str(CURRENT_DIR / "templates"))
+
+# Add debugging
+@app.on_event("startup")
+async def startup_event():
+    print("=== Debug Information ===")
+    print(f"Current directory: {CURRENT_DIR}")
+    print(f"Templates directory: {CURRENT_DIR / 'templates'}")
+    print(f"Templates directory exists: {(CURRENT_DIR / 'templates').exists()}")
+    if (CURRENT_DIR / 'templates').exists():
+        print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').iterdir())}")
+    print("=== End Debug Information ===")
+
+# Modified root endpoint with error handling
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Serve the main application page"""
+    try:
+        template_path = CURRENT_DIR / "templates" / "index.html"
+        print(f"Attempting to load template from: {template_path}")
+        print(f"Template exists: {template_path.exists()}")
+        
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        print(f"Error loading template: {str(e)}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Directory contents: {os.listdir(CURRENT_DIR)}")
+        raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 # Configure CORS
 app.add_middleware(
