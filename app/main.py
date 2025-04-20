@@ -51,11 +51,11 @@ async def root(request: Request):
     """Serve the main application page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 @app.get("/api/health")
 async def health_check():
     """Check API health and data availability"""
     try:
+        from .utils import load_data
         df = load_data()
         return {
             "status": "healthy",
@@ -73,6 +73,7 @@ async def health_check():
 async def get_branches():
     """Get list of available branches"""
     try:
+        from .utils import get_unique_branches
         branches = get_unique_branches()
         return {"branches": branches}
     except Exception as e:
@@ -104,6 +105,8 @@ async def get_rounds():
 async def predict_preferences(request: PredictionRequest):
     """Generate college preferences based on input criteria"""
     try:
+        from .utils import validate_inputs, generate_preference_list
+        
         # Validate inputs
         is_valid, error_message = validate_inputs(
             request.jee_rank,
@@ -142,32 +145,6 @@ async def predict_preferences(request: PredictionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
-    """Handle HTTP exceptions"""
-    return {
-        "error": True,
-        "message": str(exc.detail),
-        "status_code": exc.status_code
-    }
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    """Handle general exceptions"""
-    return {
-        "error": True,
-        "message": "An unexpected error occurred",
-        "detail": str(exc),
-        "status_code": 500
-    }
-
-# Run the application
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        workers=4
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
