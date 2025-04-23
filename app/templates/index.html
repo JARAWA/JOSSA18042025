@@ -17,10 +17,40 @@
     <!-- Preload critical resources -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.plot.ly">
+    
+    <!-- Authentication verification script -->
+    <script type="module" src="js/auth-verification.js"></script>
+    
+    <!-- Authentication error styles -->
+    <style>
+        .auth-error {
+            display: none; /* Hidden by default, shown by auth-verification.js when needed */
+            font-family: 'Poppins', sans-serif;
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .auth-error h2 {
+            color: #e53935;
+            margin-bottom: 20px;
+        }
+        .auth-error a {
+            color: #1e88e5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <!-- Error Alert Container -->
     <div id="error-alert-container" class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1060;"></div>
+
+    <!-- Authentication error container -->
+    <div id="auth-error-container" class="auth-error"></div>
 
     <div class="container py-4">
         <div class="main-header">
@@ -190,6 +220,28 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Authentication initialization script -->
+    <script>
+        // Your existing initialization code should be wrapped in a function
+        // that's only called after auth verification succeeds
+        window.initializeApp = function() {
+            // Your original initialization code goes here
+            console.log('App initialized after successful authentication');
+            
+            // Example: Initialize your app components
+            // loadData();
+            // setupEventListeners();
+            // etc.
+        };
+        
+        // Function to stop all processes if authentication fails
+        window.stopAllProcesses = function() {
+            console.log('Stopping all app processes due to authentication failure');
+            // Add code to stop any ongoing processes, API calls, etc.
+        };
+    </script>
+    
     <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 </body>
 </html>
