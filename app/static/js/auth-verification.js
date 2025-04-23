@@ -1,7 +1,11 @@
 // auth-verification.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -45,10 +49,11 @@ export default class AuthVerification {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
             const source = urlParams.get('source');
+            const uid = urlParams.get('uid');
             const referrer = document.referrer;
             const referrerOrigin = referrer ? new URL(referrer).origin : null;
 
-            console.log('Init started:', { source, referrerOrigin, hasToken: !!token });
+            console.log('Init started:', { source, referrerOrigin, hasToken: !!token, hasUid: !!uid });
 
             if (!this.verifyReferrer(referrerOrigin, source)) {
                 console.log('Referrer verification failed');
@@ -65,7 +70,7 @@ export default class AuthVerification {
                 return false;
             }
 
-            await this.verifyToken(token);
+            await this.verifyToken(token, uid);
             this.isVerified = true;
             localStorage.setItem('authVerified', 'true');
             // Also store it in the same format as the source app
@@ -101,15 +106,44 @@ export default class AuthVerification {
         );
     }
 
-    static async verifyToken(token) {
+    static async verifyToken(token, uid) {
         try {
-            const userCredential = await signInWithCustomToken(auth, token);
-            this.user = userCredential.user;
+            // Method 1: Decode and verify the ID token
+            if (!token) {
+                throw new Error('No token provided');
+            }
+            
+            // Parse the JWT to extract user data
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                throw new Error('Invalid token format');
+            }
+            
+            const payload = JSON.parse(atob(parts[1]));
+            
+            // Verify token hasn't expired
+            const expiry = payload.exp * 1000; // Convert to milliseconds
+            if (Date.now() >= expiry) {
+                throw new Error('Token has expired');
+            }
+            
+            // Verify the UID matches (if provided)
+            if (uid && payload.user_id !== uid && payload.sub !== uid) {
+                throw new Error('Token does not match provided UID');
+            }
+            
+            // Set user information
+            this.user = {
+                uid: payload.user_id || payload.sub,
+                email: payload.email || payload.email_verified
+            };
+            
             console.log('User authenticated:', this.user.email);
             return true;
         } catch (error) {
             console.error('Token verification failed:', error);
-            throw new Error('Invalid authentication token');
+            console.error('Error details:', error.message);
+            throw new Error(`Invalid authentication token: ${error.message}`);
         }
     }
 
