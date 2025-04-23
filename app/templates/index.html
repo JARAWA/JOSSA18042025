@@ -58,7 +58,7 @@
             <h3 class="text-center">Get personalized college recommendations with admission probability predictions</h3>
         </div>
 
-        <form id="preference-form" class="needs-validation" novalidate>
+        <form id="preference-form" class="needs-validation" novalidate onsubmit="return window.isAuthenticated;">
             <div class="input-section">
                 <div class="row">
                     <div class="col-md-6">
@@ -223,11 +223,27 @@
     
     <!-- Authentication initialization script -->
     <script>
+        // Global authentication state variable
+        window.isAuthenticated = false;
+        
         // Your existing initialization code should be wrapped in a function
         // that's only called after auth verification succeeds
         window.initializeApp = function() {
-            // Your original initialization code goes here
+            // Set global authentication state to true
+            window.isAuthenticated = true;
+            
             console.log('App initialized after successful authentication');
+            
+            // Enable the form and generate button after successful authentication
+            document.getElementById('preference-form').addEventListener('submit', function(event) {
+                if (!window.isAuthenticated) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showAuthError("You must be logged in to generate preferences");
+                    return false;
+                }
+                // If authenticated, the form will submit normally
+            });
             
             // Example: Initialize your app components
             // loadData();
@@ -238,8 +254,32 @@
         // Function to stop all processes if authentication fails
         window.stopAllProcesses = function() {
             console.log('Stopping all app processes due to authentication failure');
+            window.isAuthenticated = false;
+            
+            // Disable the generate button and add a listener to show auth error
+            const generateBtn = document.getElementById('generate-btn');
+            generateBtn.addEventListener('click', function(e) {
+                if (!window.isAuthenticated) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showAuthError("Authentication required. Please log in to use this feature.");
+                    return false;
+                }
+            });
+            
             // Add code to stop any ongoing processes, API calls, etc.
         };
+        
+        // Function to show authentication error
+        function showAuthError(message) {
+            const alertContainer = document.getElementById('error-alert-container');
+            alertContainer.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Authentication Error:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
     </script>
     
     <script src="{{ url_for('static', path='/js/main.js') }}"></script>
