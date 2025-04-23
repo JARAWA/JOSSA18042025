@@ -43,7 +43,7 @@ export default class AuthVerification {
             }
 
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
+            const token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
             const source = urlParams.get('source');
             const referrer = document.referrer;
             const referrerOrigin = referrer ? new URL(referrer).origin : null;
@@ -52,6 +52,9 @@ export default class AuthVerification {
 
             if (!this.verifyReferrer(referrerOrigin, source)) {
                 console.log('Referrer verification failed');
+                // For debugging only:
+                console.log('Expected origins:', ALLOWED_ORIGINS, 'Got:', referrerOrigin);
+                console.log('Expected source: nextstep-nexn, Got:', source);
                 this.handleUnauthorizedAccess("Invalid referrer or source");
                 return false;
             }
@@ -65,6 +68,11 @@ export default class AuthVerification {
             await this.verifyToken(token);
             this.isVerified = true;
             localStorage.setItem('authVerified', 'true');
+            // Also store it in the same format as the source app
+            localStorage.setItem('authToken', token);
+            
+            // Clear session storage to prevent reuse
+            sessionStorage.removeItem('josaa_auth_token');
             
             // Show success message
             this.showAlert(`Welcome! You're logged in successfully.`, 'success');
@@ -82,6 +90,11 @@ export default class AuthVerification {
     }
 
     static verifyReferrer(referrerOrigin, source) {
+        // For direct access without a referrer but with valid token and source
+        if (!referrerOrigin && source === 'nextstep-nexn') {
+            return true;
+        }
+        
         return (
             ALLOWED_ORIGINS.includes(referrerOrigin) || 
             source === 'nextstep-nexn'
