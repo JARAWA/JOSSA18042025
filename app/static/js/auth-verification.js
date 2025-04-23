@@ -74,6 +74,7 @@ export default class AuthVerification {
             localStorage.setItem('authToken', token);
             sessionStorage.removeItem('josaa_auth_token');
 
+            this.showAlert('Authentication successful', 'success');
             await this.initializeApplication();
             return true;
 
@@ -115,8 +116,85 @@ export default class AuthVerification {
         }
     }
 
+    static verifyReferrer(referrerOrigin, source) {
+        // For direct access without a referrer but with valid token and source
+        if (!referrerOrigin && source === 'nextstep-nexn') {
+            return true;
+        }
+        
+        return (
+            ALLOWED_ORIGINS.includes(referrerOrigin) || 
+            source === 'nextstep-nexn'
+        );
+    }
+
+    static async verifyToken(token, uid) {
+        try {
+            if (!token) {
+                throw new Error('No token provided');
+            }
+            
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                throw new Error('Invalid token format');
+            }
+            
+            const payload = JSON.parse(atob(parts[1]));
+            
+            const expiry = payload.exp * 1000; // Convert to milliseconds
+            if (Date.now() >= expiry) {
+                throw new Error('Token has expired');
+            }
+            
+            if (uid && payload.user_id !== uid && payload.sub !== uid) {
+                throw new Error('Token does not match provided UID');
+            }
+            
+            this.user = {
+                uid: payload.user_id || payload.sub,
+                email: payload.email || payload.email_verified
+            };
+            
+            console.log('User authenticated:', this.user.email);
+            return true;
+        } catch (error) {
+            console.error('Token verification failed:', error);
+            throw new Error(`Invalid authentication token: ${error.message}`);
+        }
+    }
+
+    static handleUnauthorizedAccess(message) {
+        const errorContainer = document.getElementById('auth-error-container') || 
+            this.createErrorContainer();
+
+        errorContainer.style.display = 'block';
+        errorContainer.innerHTML = `
+            <h2>Access Denied</h2>
+            <p>${message}</p>
+            <p>Please access this application through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
+        `;
+        
+        this.showAlert(message, 'danger');
+        this.disableAppFunctionality();
+    }
+
+    static createErrorContainer() {
+        const container = document.createElement('div');
+        container.id = 'auth-error-container';
+        container.style.position = 'fixed';
+        container.style.top = '50%';
+        container.style.left = '50%';
+        container.style.transform = 'translate(-50%, -50%)';
+        container.style.backgroundColor = 'white';
+        container.style.padding = '20px';
+        container.style.borderRadius = '8px';
+        container.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        container.style.zIndex = '1001';
+        document.body.appendChild(container);
+        return container;
+    }
+
     static showLoadingState() {
-        // Create loading element if it doesn't exist
         let loadingElement = document.getElementById('auth-loading');
         if (!loadingElement) {
             loadingElement = document.createElement('div');
@@ -132,27 +210,33 @@ export default class AuthVerification {
         }
         loadingElement.style.display = 'block';
 
-        // Add CSS styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .auth-loading {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                text-align: center;
-                z-index: 1000;
-                background: rgba(255, 255, 255, 0.9);
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            }
-            .auth-loading p {
-                margin-top: 10px;
-                color: #666;
-            }
-        `;
-        document.head.appendChild(style);
+        this.addLoadingStyles();
+    }
+
+    static addLoadingStyles() {
+        if (!document.getElementById('auth-loading-styles')) {
+            const style = document.createElement('style');
+            style.id = 'auth-loading-styles';
+            style.textContent = `
+                .auth-loading {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    z-index: 1000;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                }
+                .auth-loading p {
+                    margin-top: 10px;
+                    color: #666;
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     static removeLoadingState() {
@@ -161,17 +245,13 @@ export default class AuthVerification {
             loadingElement.style.display = 'none';
         }
 
-        // Show main content
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
             mainContent.style.display = 'block';
         }
     }
 
-    // ... (keep existing methods: verifyReferrer, verifyToken, handleUnauthorizedAccess, etc.)
-
     static showAlert(message, type = 'danger') {
-        // Create alert container if it doesn't exist
         let alertContainer = document.getElementById('error-alert-container');
         if (!alertContainer) {
             alertContainer = document.createElement('div');
@@ -192,10 +272,28 @@ export default class AuthVerification {
 
         alertContainer.appendChild(alertElement);
 
-        // Auto-remove alert after 5 seconds
         setTimeout(() => {
             alertElement.remove();
         }, 5000);
+    }
+
+    static disableAppFunctionality() {
+        const interactiveElements = document.querySelectorAll('button, a, input, select, textarea');
+        interactiveElements.forEach(el => {
+            if (el.closest('#auth-error-container') === null) {
+                el.disabled = true;
+                el.style.pointerEvents = 'none';
+                el.style.opacity = '0.5';
+            }
+        });
+        
+        if (window.stopAllProcesses) {
+            window.stopAllProcesses();
+        }
+    }
+
+    static isAuthenticated() {
+        return this.isVerified && this.user !== null;
     }
 }
 
