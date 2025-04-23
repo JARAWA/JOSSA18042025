@@ -32,17 +32,18 @@ const ALLOWED_ORIGINS = [
 export default class AuthVerification {
     static isVerified = false;
     static user = null;
+    static initializationTimeout = 30000; // 30 seconds timeout
 
     static async init() {
         try {
+            this.showLoadingState();
+
             // Development mode check
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('Development mode: Bypassing authentication');
                 this.isVerified = true;
                 this.user = { email: 'dev@example.com' };
-                if (window.initializeApp) {
-                    window.initializeApp();
-                }
+                await this.initializeApplication();
                 return true;
             }
 
@@ -57,9 +58,6 @@ export default class AuthVerification {
 
             if (!this.verifyReferrer(referrerOrigin, source)) {
                 console.log('Referrer verification failed');
-                // For debugging only:
-                console.log('Expected origins:', ALLOWED_ORIGINS, 'Got:', referrerOrigin);
-                console.log('Expected source: nextstep-nexn, Got:', source);
                 this.handleUnauthorizedAccess("Invalid referrer or source");
                 return false;
             }
@@ -73,124 +71,131 @@ export default class AuthVerification {
             await this.verifyToken(token, uid);
             this.isVerified = true;
             localStorage.setItem('authVerified', 'true');
-            // Also store it in the same format as the source app
             localStorage.setItem('authToken', token);
-            
-            // Clear session storage to prevent reuse
             sessionStorage.removeItem('josaa_auth_token');
-            
-            // Show success message
-            this.showAlert(`Welcome! You're logged in successfully.`, 'success');
-            
-            if (window.initializeApp) {
-                window.initializeApp();
-            }
+
+            await this.initializeApplication();
             return true;
 
         } catch (error) {
             console.error('Authentication initialization error:', error);
             this.handleUnauthorizedAccess(error.message);
             return false;
+        } finally {
+            this.removeLoadingState();
         }
     }
 
-    static verifyReferrer(referrerOrigin, source) {
-        // For direct access without a referrer but with valid token and source
-        if (!referrerOrigin && source === 'nextstep-nexn') {
-            return true;
+    static async initializeApplication() {
+        if (!window.initializeApp) {
+            console.warn('No initialization function found');
+            return;
         }
-        
-        return (
-            ALLOWED_ORIGINS.includes(referrerOrigin) || 
-            source === 'nextstep-nexn'
-        );
-    }
 
-    static async verifyToken(token, uid) {
+        const initPromise = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Application initialization timed out'));
+            }, this.initializationTimeout);
+
+            Promise.resolve(window.initializeApp())
+                .then(() => {
+                    clearTimeout(timeout);
+                    resolve();
+                })
+                .catch(reject);
+        });
+
         try {
-            // Method 1: Decode and verify the ID token
-            if (!token) {
-                throw new Error('No token provided');
-            }
-            
-            // Parse the JWT to extract user data
-            const parts = token.split('.');
-            if (parts.length !== 3) {
-                throw new Error('Invalid token format');
-            }
-            
-            const payload = JSON.parse(atob(parts[1]));
-            
-            // Verify token hasn't expired
-            const expiry = payload.exp * 1000; // Convert to milliseconds
-            if (Date.now() >= expiry) {
-                throw new Error('Token has expired');
-            }
-            
-            // Verify the UID matches (if provided)
-            if (uid && payload.user_id !== uid && payload.sub !== uid) {
-                throw new Error('Token does not match provided UID');
-            }
-            
-            // Set user information
-            this.user = {
-                uid: payload.user_id || payload.sub,
-                email: payload.email || payload.email_verified
-            };
-            
-            console.log('User authenticated:', this.user.email);
-            return true;
+            await initPromise;
+            this.showAlert('Application initialized successfully', 'success');
         } catch (error) {
-            console.error('Token verification failed:', error);
-            console.error('Error details:', error.message);
-            throw new Error(`Invalid authentication token: ${error.message}`);
+            console.error('Application initialization error:', error);
+            this.showAlert('Failed to initialize application. Please refresh the page.', 'error');
+            throw error;
         }
     }
 
-    static handleUnauthorizedAccess(message) {
-        const errorContainer = document.getElementById('auth-error-container');
-        if (errorContainer) {
-            errorContainer.style.display = 'block';
-            errorContainer.innerHTML = `
-                <h2>Access Denied</h2>
-                <p>${message}</p>
-                <p>Please access this application through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
+    static showLoadingState() {
+        // Create loading element if it doesn't exist
+        let loadingElement = document.getElementById('auth-loading');
+        if (!loadingElement) {
+            loadingElement = document.createElement('div');
+            loadingElement.id = 'auth-loading';
+            loadingElement.className = 'auth-loading';
+            loadingElement.innerHTML = `
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Verifying authentication...</p>
             `;
+            document.body.appendChild(loadingElement);
         }
-        
-        this.showAlert(message, 'danger');
-        this.disableAppFunctionality();
+        loadingElement.style.display = 'block';
+
+        // Add CSS styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .auth-loading {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                z-index: 1000;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            .auth-loading p {
+                margin-top: 10px;
+                color: #666;
+            }
+        `;
+        document.head.appendChild(style);
     }
+
+    static removeLoadingState() {
+        const loadingElement = document.getElementById('auth-loading');
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
+        // Show main content
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.display = 'block';
+        }
+    }
+
+    // ... (keep existing methods: verifyReferrer, verifyToken, handleUnauthorizedAccess, etc.)
 
     static showAlert(message, type = 'danger') {
-        const alertContainer = document.getElementById('error-alert-container');
-        if (alertContainer) {
-            alertContainer.innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
+        // Create alert container if it doesn't exist
+        let alertContainer = document.getElementById('error-alert-container');
+        if (!alertContainer) {
+            alertContainer = document.createElement('div');
+            alertContainer.id = 'error-alert-container';
+            alertContainer.style.position = 'fixed';
+            alertContainer.style.top = '20px';
+            alertContainer.style.right = '20px';
+            alertContainer.style.zIndex = '1000';
+            document.body.appendChild(alertContainer);
         }
-    }
-    
-    static disableAppFunctionality() {
-        const interactiveElements = document.querySelectorAll('button, a, input, select, textarea');
-        interactiveElements.forEach(el => {
-            if (el.closest('.auth-error') === null) {
-                el.disabled = true;
-                el.style.pointerEvents = 'none';
-                el.style.opacity = '0.5';
-            }
-        });
-        
-        if (window.stopAllProcesses) {
-            window.stopAllProcesses();
-        }
-    }
 
-    static isAuthenticated() {
-        return this.isVerified && this.user !== null;
+        const alertElement = document.createElement('div');
+        alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+        alertElement.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        alertContainer.appendChild(alertElement);
+
+        // Auto-remove alert after 5 seconds
+        setTimeout(() => {
+            alertElement.remove();
+        }, 5000);
     }
 }
 
