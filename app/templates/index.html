@@ -257,6 +257,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
+<!-- Load Firebase SDKs directly in HTML (not through module imports) -->
+<script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+
 <!-- Load main.js FIRST - it defines window.initializeMainApp -->
 <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 
@@ -267,10 +271,16 @@
         console.log('Auth verification successful, initializing app...');
         
         // Hide loading overlay
-        document.getElementById('auth-loading').style.display = 'none';
+        const authLoading = document.getElementById('auth-loading');
+        if (authLoading) {
+            authLoading.style.display = 'none';
+        }
         
         // Show main content
-        document.getElementById('main-content').style.display = 'block';
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.display = 'block';
+        }
         
         // Show welcome message if user info is available
         const alertContainer = document.getElementById('error-alert-container');
@@ -348,10 +358,48 @@
         // Keep main content hidden
         document.getElementById('main-content').style.display = 'none';
     };
+    
+    // Authentication timeout safety - in case verification gets stuck
+    setTimeout(function() {
+        const authLoading = document.getElementById('auth-loading');
+        const mainContent = document.getElementById('main-content');
+        
+        if (authLoading && authLoading.style.display !== 'none') {
+            console.log('Authentication verification timeout reached, forcing initialization');
+            
+            // Hide loading overlay
+            authLoading.style.display = 'none';
+            
+            // Show main content
+            if (mainContent) {
+                mainContent.style.display = 'block';
+            }
+            
+            // Show warning message
+            const alertContainer = document.getElementById('error-alert-container');
+            if (alertContainer) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>Warning:</strong> Authentication verification timed out. Some features may be limited.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
+            
+            // Try to initialize application
+            if (typeof window.initializeMainApp === 'function') {
+                try {
+                    window.initializeMainApp();
+                } catch (error) {
+                    console.error('Error during forced initialization:', error);
+                }
+            }
+        }
+    }, 10000); // 10 second timeout
 </script>
 
-<!-- Load Auth Verification script LAST -->
-<script type="module" src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
+<!-- Load Auth Verification script as regular script (not module) -->
+<script src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
 </body>
 </html>
             
