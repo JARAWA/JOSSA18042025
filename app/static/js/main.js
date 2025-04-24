@@ -16,12 +16,13 @@ let tooltipInstances = [];
 let currentSortColumn = null;
 let isAscending = true;
 
-// Initialize when document is ready
-document.addEventListener('DOMContentLoaded', function() {
+// Main initialization function - will be called after authentication from index.html
+function initializeMainApp() {
+    console.log('Initializing app components...');
     initializeApp();
     initializeEventListeners();
     initializeTooltips();
-});
+}
 
 // App Initialization
 async function initializeApp() {
@@ -100,10 +101,13 @@ async function updateQuotaOptions(collegeType) {
 
 // Event Listeners
 function initializeEventListeners() {
+    console.log('Setting up event listeners...');
+    
     // Form submission
     const form = document.getElementById('preference-form');
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
+        console.log('Form event listener attached');
     } else {
         console.error("Form element 'preference-form' not found");
     }
@@ -117,6 +121,7 @@ function initializeEventListeners() {
                 await updateQuotaOptions(event.target.value);
             }
         });
+        console.log('College type event listener attached');
     } else {
         console.error("Element 'college-type' not found");
     }
@@ -125,6 +130,7 @@ function initializeEventListeners() {
     const probSlider = document.getElementById('min-prob');
     if (probSlider) {
         probSlider.addEventListener('input', handleProbabilityChange);
+        console.log('Probability slider event listener attached');
     } else {
         console.error("Element 'min-prob' not found");
     }
@@ -133,6 +139,7 @@ function initializeEventListeners() {
     const downloadBtn = document.getElementById('download-btn');
     if (downloadBtn) {
         downloadBtn.addEventListener('click', handleDownload);
+        console.log('Download button event listener attached');
     } else {
         console.error("Element 'download-btn' not found");
     }
@@ -144,6 +151,11 @@ function initializeEventListeners() {
 // Initialize table sorting
 function initializeTableSorting() {
     const resultsTable = document.getElementById('results-table');
+    if (!resultsTable) {
+        console.error("Element 'results-table' not found");
+        return;
+    }
+    
     const headerRow = resultsTable.querySelector('thead tr');
     
     if (headerRow) {
@@ -157,6 +169,9 @@ function initializeTableSorting() {
             sortIndicator.innerHTML = '⇅';
             cell.appendChild(sortIndicator);
         });
+        console.log('Table sorting initialized');
+    } else {
+        console.error("Header row in 'results-table' not found");
     }
 }
 
@@ -281,7 +296,10 @@ function handlePredictionResponse(data) {
 
     currentResults = data.preferences;
     displayResults(data);
-    document.getElementById('download-btn').disabled = false;
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.disabled = false;
+    }
     
     // Reset sorting state when new results are displayed
     currentSortColumn = null;
@@ -293,6 +311,11 @@ function handlePredictionResponse(data) {
 function displayResults(data) {
     const outputSection = document.getElementById('output-section');
     const tableBody = document.getElementById('results-body');
+    
+    if (!tableBody) {
+        console.error("Element 'results-body' not found");
+        return;
+    }
     
     tableBody.innerHTML = '';
     
@@ -308,12 +331,22 @@ function displayResults(data) {
         createPlot(data.plot_data);
     }
 
-    outputSection.style.display = 'block';
-    outputSection.scrollIntoView({ behavior: 'smooth' });
+    if (outputSection) {
+        outputSection.style.display = 'block';
+        outputSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        console.error("Element 'output-section' not found");
+    }
 }
 
 // Plot Creation
 function createPlot(plotData) {
+    const plotContainer = document.getElementById('plot-container');
+    if (!plotContainer) {
+        console.error("Element 'plot-container' not found");
+        return;
+    }
+    
     const layout = {
         title: 'Distribution of Admission Probabilities',
         xaxis: {
@@ -363,6 +396,11 @@ function handleDownload() {
 // Form Validation
 function validateForm() {
     const form = document.getElementById('preference-form');
+    if (!form) {
+        console.error("Form element 'preference-form' not found");
+        return false;
+    }
+    
     if (!form.checkValidity()) {
         form.classList.add('was-validated');
         return false;
@@ -398,8 +436,19 @@ function setLoadingState(isLoading) {
     const generateBtn = document.getElementById('generate-btn');
     const downloadBtn = document.getElementById('download-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
+    
+    if (!generateBtn || !downloadBtn || !loadingOverlay) {
+        console.error('One or more UI elements not found for loading state management');
+        return;
+    }
+    
     const spinner = generateBtn.querySelector('.spinner-border');
     const buttonContent = generateBtn.querySelector('.button-content');
+
+    if (!spinner || !buttonContent) {
+        console.error('Spinner or button content elements not found');
+        return;
+    }
 
     if (isLoading) {
         generateBtn.disabled = true;
@@ -418,6 +467,11 @@ function setLoadingState(isLoading) {
 // Error Handling
 function showError(message) {
     const alertContainer = document.getElementById('error-alert-container');
+    if (!alertContainer) {
+        console.error("Element 'error-alert-container' not found");
+        return;
+    }
+    
     const alert = document.createElement('div');
     alert.className = 'alert alert-danger alert-dismissible fade show';
     alert.innerHTML = `
@@ -435,13 +489,24 @@ function showError(message) {
 // Utility Functions
 function handleCollegeTypeChange(event) {
     const rankLabel = document.getElementById('rank-label');
+    if (!rankLabel) {
+        console.error("Element 'rank-label' not found");
+        return;
+    }
+    
     rankLabel.textContent = event.target.value === 'IIT' 
         ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
         : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
 }
 
 function handleProbabilityChange(event) {
-    document.getElementById('prob-value').textContent = event.target.value;
+    const probValue = document.getElementById('prob-value');
+    if (!probValue) {
+        console.error("Element 'prob-value' not found");
+        return;
+    }
+    
+    probValue.textContent = event.target.value;
 }
 
 function initializeTooltips() {
@@ -449,9 +514,14 @@ function initializeTooltips() {
     tooltipInstances = tooltipTriggerList.map(function(tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    console.log('Tooltips initialized');
 }
 
 // Clean up function for tooltips
 window.addEventListener('beforeunload', function() {
     tooltipInstances.forEach(tooltip => tooltip.dispose());
 });
+
+// Export the initializeMainApp function to the global scope
+// This allows it to be called from the HTML after authentication
+window.initializeMainApp = initializeMainApp;
