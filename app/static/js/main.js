@@ -8,7 +8,106 @@ const ENDPOINTS = {
     predict: '/api/predict',
     quotas: '/api/quotas',      // New endpoint for quotas
     genders: '/api/genders'     // New endpoint for genders
-};
+}
+
+// Error Handling
+function showError(message) {
+    const alertContainer = document.getElementById('error-alert-container');
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-danger alert-dismissible fade show';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    alertContainer.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.classList.remove('show');
+        setTimeout(() => alert.remove(), 150);
+    }, 5000);
+}
+
+// Utility Functions
+function handleCollegeTypeChange(event) {
+    const rankLabel = document.getElementById('rank-label');
+    const collegeType = event.target.value;
+    const quotaSelect = document.getElementById('quota');
+    
+    // Update rank label based on college type
+    rankLabel.textContent = collegeType === 'IIT' 
+        ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
+        : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
+    
+    // Update available quotas based on college type
+    updateQuotaOptions(collegeType);
+}
+
+// Update quota options based on college type
+function updateQuotaOptions(collegeType) {
+    const quotaSelect = document.getElementById('quota');
+    
+    // Reset quota dropdown
+    quotaSelect.innerHTML = '<option value="">Select Quota</option>';
+    
+    // Add appropriate options based on college type
+    if (collegeType === 'IIT' || collegeType === 'IIIT') {
+        // Only AI quota for IITs and IIITs
+        const option = document.createElement('option');
+        option.value = 'AI';
+        option.textContent = 'AI';
+        quotaSelect.appendChild(option);
+        
+        // Auto-select AI and disable dropdown
+        quotaSelect.value = 'AI';
+        quotaSelect.disabled = true;
+    } else if (collegeType === 'NIT') {
+        // HS, OS, GO, JK, LA for NITs
+        const options = ['ALL', 'HS', 'OS', 'GO', 'JK', 'LA'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    } else if (collegeType === 'GFTI') {
+        // AI, HS, OS for GFTIs
+        const options = ['ALL', 'AI', 'HS', 'OS'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    } else {
+        // All options for 'ALL' college type
+        const options = ['ALL', 'AI', 'HS', 'OS', 'GO', 'JK', 'LA'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    }
+}
+
+function handleProbabilityChange(event) {
+    document.getElementById('prob-value').textContent = event.target.value;
+}
+
+function initializeTooltips() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipInstances = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+// Clean up function for tooltips
+window.addEventListener('beforeunload', function() {
+    tooltipInstances.forEach(tooltip => tooltip.dispose());
+});;
 
 // Global Variables
 let currentResults = null;
@@ -254,9 +353,36 @@ function displayResults(data) {
     // Populate table
     data.preferences.forEach(pref => {
         const row = tableBody.insertRow();
-        Object.values(pref).forEach(value => {
+        
+        // Determine row color based on probability
+        const probability = parseFloat(pref['Admission Probability (%)']);
+        if (probability >= 80) {
+            row.classList.add('table-success');
+        } else if (probability >= 50) {
+            row.classList.add('table-warning');
+        } else if (probability > 0) {
+            row.classList.add('table-danger');
+        }
+        
+        // Add data in the correct order matching the table headers
+        const headers = [
+            'Preference',
+            'Institute',
+            'College Type',
+            'Quota',
+            'Gender',
+            'Location',
+            'Branch',
+            'Opening Rank',
+            'Closing Rank',
+            'Admission Probability (%)',
+            'Admission Chances'
+        ];
+        
+        headers.forEach(header => {
             const cell = row.insertCell();
-            cell.textContent = value;
+            // Handle missing columns gracefully
+            cell.textContent = pref[header] || '';
         });
     });
 
@@ -348,102 +474,3 @@ function setLoadingState(isLoading) {
         buttonContent.classList.remove('d-none');
     }
 }
-
-// Error Handling
-function showError(message) {
-    const alertContainer = document.getElementById('error-alert-container');
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-danger alert-dismissible fade show';
-    alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    alertContainer.appendChild(alert);
-    
-    setTimeout(() => {
-        alert.classList.remove('show');
-        setTimeout(() => alert.remove(), 150);
-    }, 5000);
-}
-
-// Utility Functions
-function handleCollegeTypeChange(event) {
-    const rankLabel = document.getElementById('rank-label');
-    const collegeType = event.target.value;
-    const quotaSelect = document.getElementById('quota');
-    
-    // Update rank label based on college type
-    rankLabel.textContent = collegeType === 'IIT' 
-        ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
-        : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
-    
-    // Update available quotas based on college type
-    updateQuotaOptions(collegeType);
-}
-
-// Update quota options based on college type
-function updateQuotaOptions(collegeType) {
-    const quotaSelect = document.getElementById('quota');
-    
-    // Reset quota dropdown
-    quotaSelect.innerHTML = '<option value="">Select Quota</option>';
-    
-    // Add appropriate options based on college type
-    if (collegeType === 'IIT' || collegeType === 'IIIT') {
-        // Only AI quota for IITs and IIITs
-        const option = document.createElement('option');
-        option.value = 'AI';
-        option.textContent = 'AI';
-        quotaSelect.appendChild(option);
-        
-        // Auto-select AI and disable dropdown
-        quotaSelect.value = 'AI';
-        quotaSelect.disabled = true;
-    } else if (collegeType === 'NIT') {
-        // HS, OS, GO, JK, LA for NITs
-        const options = ['ALL', 'HS', 'OS', 'GO', 'JK', 'LA'];
-        options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            quotaSelect.appendChild(option);
-        });
-        quotaSelect.disabled = false;
-    } else if (collegeType === 'GFTI') {
-        // AI, HS, OS for GFTIs
-        const options = ['ALL', 'AI', 'HS', 'OS'];
-        options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            quotaSelect.appendChild(option);
-        });
-        quotaSelect.disabled = false;
-    } else {
-        // All options for 'ALL' college type
-        const options = ['ALL', 'AI', 'HS', 'OS', 'GO', 'JK', 'LA'];
-        options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt;
-            option.textContent = opt;
-            quotaSelect.appendChild(option);
-        });
-        quotaSelect.disabled = false;
-    }
-}
-
-function handleProbabilityChange(event) {
-    document.getElementById('prob-value').textContent = event.target.value;
-}
-
-function initializeTooltips() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipInstances = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-}
-
-// Clean up function for tooltips
-window.addEventListener('beforeunload', function() {
-    tooltipInstances.forEach(tooltip => tooltip.dispose());
-});
