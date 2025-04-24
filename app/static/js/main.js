@@ -179,45 +179,42 @@ function initializeTableSorting() {
     }
     
     const headerCells = headerRow.querySelectorAll('th');
-    headerCells.forEach((cell, columnIndex) => {
-        cell.addEventListener('click', () => handleSortClick(columnIndex));
-        cell.style.cursor = 'pointer';
-        // Add sort indicator elements
-        const sortIndicator = document.createElement('span');
-        sortIndicator.className = 'sort-indicator ms-1';
-        sortIndicator.innerHTML = '⇅';
-        cell.appendChild(sortIndicator);
+    headerCells.forEach(cell => {
+        if (cell.classList.contains('sortable')) {
+            cell.addEventListener('click', () => {
+                const columnName = cell.getAttribute('data-sort');
+                handleSortClick(columnName);
+            });
+            cell.style.cursor = 'pointer';
+        }
     });
     
     console.log('Table sorting initialized');
 }
 
 // Handle sort click
-function handleSortClick(columnIndex) {
-    if (currentResults && currentResults.length > 0) {
-        // Toggle sort direction if clicking the same column
-        if (currentSortColumn === columnIndex) {
-            isAscending = !isAscending;
-        } else {
-            currentSortColumn = columnIndex;
-            isAscending = true;
-        }
-        
-        sortTable(columnIndex, isAscending);
-        updateSortIndicators(columnIndex, isAscending);
+function handleSortClick(columnName) {
+    if (!currentResults || currentResults.length === 0) return;
+    
+    // Toggle sort direction if clicking the same column
+    if (currentSortColumn === columnName) {
+        isAscending = !isAscending;
+    } else {
+        currentSortColumn = columnName;
+        isAscending = true;
     }
+    
+    sortTable(columnName, isAscending);
+    updateSortIndicators(columnName, isAscending);
 }
 
 // Sort table by column
-function sortTable(columnIndex, ascending) {
+function sortTable(columnName, ascending) {
     if (!currentResults || currentResults.length === 0) return;
     
-    const columnKeys = Object.keys(currentResults[0]);
-    const columnKey = columnKeys[columnIndex];
-    
     currentResults.sort((a, b) => {
-        let valueA = a[columnKey];
-        let valueB = b[columnKey];
+        let valueA = a[columnName];
+        let valueB = b[columnName];
         
         // Check if values are numeric
         const isNumeric = !isNaN(parseFloat(valueA)) && !isNaN(parseFloat(valueB));
@@ -236,44 +233,30 @@ function sortTable(columnIndex, ascending) {
     });
     
     // Redisplay sorted results
-    const tableBody = document.getElementById('results-body');
-    if (!tableBody) {
-        console.error("Element 'results-body' not found");
-        return;
-    }
-    
-    tableBody.innerHTML = '';
-    
-    currentResults.forEach(pref => {
-        const row = tableBody.insertRow();
-        Object.values(pref).forEach(value => {
-            const cell = row.insertCell();
-            cell.textContent = value;
-        });
-    });
+    displayResults({ preferences: currentResults });
 }
 
 // Update sort indicators in the table header
-function updateSortIndicators(activeColumnIndex, ascending) {
-    const headerCells = document.querySelectorAll('#results-table thead th');
+function updateSortIndicators(activeColumnName, ascending) {
+    const headerCells = document.querySelectorAll('#results-table thead th.sortable');
     if (!headerCells || headerCells.length === 0) {
-        console.error("Table header cells not found");
+        console.error("Sortable table header cells not found");
         return;
     }
     
-    headerCells.forEach((cell, index) => {
-        const indicator = cell.querySelector('.sort-indicator');
-        if (!indicator) {
-            console.error(`Sort indicator not found in header cell ${index}`);
+    headerCells.forEach(cell => {
+        const columnName = cell.getAttribute('data-sort');
+        const icon = cell.querySelector('i.fas');
+        
+        if (!icon) {
+            console.error(`Sort icon not found in header cell for ${columnName}`);
             return;
         }
         
-        if (index === activeColumnIndex) {
-            indicator.innerHTML = ascending ? '↑' : '↓';
-            indicator.classList.add('active');
+        if (columnName === activeColumnName) {
+            icon.className = ascending ? 'fas fa-sort-up' : 'fas fa-sort-down';
         } else {
-            indicator.innerHTML = '⇅';
-            indicator.classList.remove('active');
+            icon.className = 'fas fa-sort';
         }
     });
 }
@@ -354,7 +337,7 @@ function handlePredictionResponse(data) {
     // Reset sorting state when new results are displayed
     currentSortColumn = null;
     isAscending = true;
-    updateSortIndicators(-1, true);
+    updateSortIndicators(null, true);
 }
 
 // Results Display
@@ -373,12 +356,43 @@ function displayResults(data) {
     
     tableBody.innerHTML = '';
     
-    data.preferences.forEach(pref => {
+    data.preferences.forEach((pref, index) => {
         const row = tableBody.insertRow();
-        Object.values(pref).forEach(value => {
-            const cell = row.insertCell();
-            cell.textContent = value;
-        });
+        
+        // Create cells for each column in the table
+        // Make sure the order matches your HTML table headers
+        const prefCell = row.insertCell();
+        prefCell.textContent = index + 1; // Preference number starts from 1
+        
+        const instituteCell = row.insertCell();
+        instituteCell.textContent = pref.institute || '';
+        
+        const collegeTypeCell = row.insertCell();
+        collegeTypeCell.textContent = pref.collegeType || '';
+        
+        const locationCell = row.insertCell();
+        locationCell.textContent = pref.location || '';
+        
+        const branchCell = row.insertCell();
+        branchCell.textContent = pref.branch || '';
+        
+        const quotaCell = row.insertCell();
+        quotaCell.textContent = pref.quota || '';
+        
+        const genderCell = row.insertCell();
+        genderCell.textContent = pref.gender || '';
+        
+        const openingRankCell = row.insertCell();
+        openingRankCell.textContent = pref.openingRank || '';
+        
+        const closingRankCell = row.insertCell();
+        closingRankCell.textContent = pref.closingRank || '';
+        
+        const probabilityCell = row.insertCell();
+        probabilityCell.textContent = pref.probability || '';
+        
+        const chancesCell = row.insertCell();
+        chancesCell.textContent = pref.chances || '';
     });
 
     if (data.plot_data) {
@@ -468,18 +482,25 @@ function validateForm() {
     // Additional validation for quota based on college type
     const collegeTypeEl = document.getElementById('college-type');
     const quotaEl = document.getElementById('quota');
+    const genderEl = document.getElementById('gender');
     
-    if (!collegeTypeEl || !quotaEl) {
-        console.error("College type or quota element not found during validation");
+    if (!collegeTypeEl || !quotaEl || !genderEl) {
+        console.error("Required elements not found during validation");
         showError('Form validation error. Please try refreshing the page.');
         return false;
     }
     
     const collegeType = collegeTypeEl.value;
     const quota = quotaEl.value;
+    const gender = genderEl.value;
     
     if (!quota) {
         showError('Please select a quota');
+        return false;
+    }
+    
+    if (!gender) {
+        showError('Please select a gender preference');
         return false;
     }
     
@@ -510,25 +531,14 @@ function setLoadingState(isLoading) {
         return;
     }
     
-    if (!downloadBtn) {
-        console.error("Element 'download-btn' not found");
-    }
-    
     if (!loadingOverlay) {
         console.error("Element 'loading-overlay' not found");
+        return;
     }
     
     const spinner = generateBtn.querySelector('.spinner-border');
     const buttonContent = generateBtn.querySelector('.button-content');
     
-    if (!spinner) {
-        console.error("Spinner element not found in generate button");
-    }
-    
-    if (!buttonContent) {
-        console.error("Button content element not found in generate button");
-    }
-
     if (isLoading) {
         generateBtn.disabled = true;
         if (downloadBtn) downloadBtn.disabled = true;
