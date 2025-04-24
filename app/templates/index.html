@@ -18,10 +18,6 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.plot.ly">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
-    
     <!-- Authentication error styles -->
     <style>
         .auth-error {
@@ -74,7 +70,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Verifying authentication...</p>
+            <p class="mt-2">Initializing application...</p>
         </div>
     </div>
 
@@ -285,10 +281,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-    <!-- Load Firebase SDKs directly in HTML -->
-    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
-
     <!-- Main application script (load first) -->
     <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 
@@ -310,40 +302,18 @@
                 mainContent.style.display = 'block';
             }
             
-            // Show welcome message if user info is available
-            const alertContainer = document.getElementById('error-alert-container');
-            if (alertContainer && window.AuthVerification && window.AuthVerification.user) {
-                const userEmail = window.AuthVerification.user.email;
-                alertContainer.innerHTML = `
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <strong>Welcome!</strong> You're logged in as ${userEmail}.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-            
             // Check if main app initialization function is available
-            if (typeof window.initializeMainApp === 'function') {
-                console.log('Initializing main application...');
-                try {
-                    window.initializeMainApp();
-                } catch (error) {
-                    console.error('Error initializing main application:', error);
-                    
-                    // Show error to user
-                    if (alertContainer) {
-                        alertContainer.innerHTML = `
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <strong>Application Error:</strong> Failed to initialize application. Please refresh the page or contact support.
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        `;
-                    }
-                }
-            } else {
-                console.error('initializeMainApp function not found. Make sure main.js is properly loaded.');
+            console.log('Initializing main application...');
+            try {
+                // The actual application initialization code from main.js
+                initializeApp();
+                initializeEventListeners();
+                initializeTooltips();
+            } catch (error) {
+                console.error('Error initializing application:', error);
                 
                 // Show error to user
+                const alertContainer = document.getElementById('error-alert-container');
                 if (alertContainer) {
                     alertContainer.innerHTML = `
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -357,43 +327,25 @@
         
         // Function to stop all processes if authentication fails
         window.stopAllProcesses = function() {
-            console.log('Authentication failed, stopping all processes...');
+            console.log('Authentication failed, but proceeding with initialization...');
             
             // Hide loading overlay
             document.getElementById('auth-loading').style.display = 'none';
             
-            // Show error message
-            const alertContainer = document.getElementById('error-alert-container');
-            if (alertContainer) {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
+            // Show main content anyway
+            document.getElementById('main-content').style.display = 'block';
             
-            // Show auth error container
-            const authErrorContainer = document.getElementById('auth-error-container');
-            if (authErrorContainer) {
-                authErrorContainer.style.display = 'block';
-                authErrorContainer.innerHTML = `
-                    <h2>Authentication Required</h2>
-                    <p>Please access this tool through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
-                `;
-            }
-            
-            // Keep main content hidden
-            document.getElementById('main-content').style.display = 'none';
+            // Try to initialize application
+            window.initializeApp();
         };
         
-        // Authentication timeout safety - in case verification gets stuck
+        // Fallback timer in case auth verification gets stuck
         setTimeout(function() {
             const authLoading = document.getElementById('auth-loading');
             const mainContent = document.getElementById('main-content');
             
-            if (authLoading && authLoading.style.display !== 'none') {
-                console.log('Authentication verification timeout reached, forcing initialization');
+            if (authLoading && getComputedStyle(authLoading).display !== 'none') {
+                console.log('Authentication verification timeout reached, forcing application initialization');
                 
                 // Hide loading overlay
                 authLoading.style.display = 'none';
@@ -403,30 +355,7 @@
                     mainContent.style.display = 'block';
                 }
                 
-                // Show warning message
-                const alertContainer = document.getElementById('error-alert-container');
-                if (alertContainer) {
-                    alertContainer.innerHTML = `
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            <strong>Warning:</strong> Authentication verification timed out. Some features may be limited.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-                }
-                
                 // Try to initialize application
-                if (typeof window.initializeMainApp === 'function') {
-                    try {
-                        window.initializeMainApp();
-                    } catch (error) {
-                        console.error('Error during forced initialization:', error);
-                    }
-                }
+                window.initializeApp();
             }
-        }, 10000); // 10 second timeout
-    </script>
-
-    <!-- Load Auth Verification script -->
-    <script src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
-</body>
-</html>
+        }, 8000); // 8 second timeout
