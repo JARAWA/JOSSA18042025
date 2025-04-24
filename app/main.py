@@ -56,30 +56,6 @@ async def startup_event():
         print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').glob('*'))}")
     print("=== End Debug Information ===")
 
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    try:
-        return templates.TemplateResponse(
-            "index.html", 
-            {
-                "request": request,
-                "static_url": "/static/"  # Add this to help debug static file paths
-            }
-        )
-    except Exception as e:
-        print(f"Error in root endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-# Add debugging
-@app.on_event("startup")
-async def startup_event():
-    print("=== Debug Information ===")
-    print(f"Current directory: {CURRENT_DIR}")
-    print(f"Templates directory: {CURRENT_DIR / 'templates'}")
-    print(f"Templates directory exists: {(CURRENT_DIR / 'templates').exists()}")
-    if (CURRENT_DIR / 'templates').exists():
-        print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').iterdir())}")
-    print("=== End Debug Information ===")
-
 # Modified root endpoint with error handling
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -112,6 +88,8 @@ class PredictionRequest(BaseModel):
     college_type: str
     preferred_branch: str
     round_no: str
+    quota: str  # New field for quota
+    gender: str  # New field for gender
     min_probability: float = 0.0
 
 class PredictionResponse(BaseModel):
@@ -168,6 +146,18 @@ async def get_college_types():
     college_types = ["ALL", "IIT", "NIT", "IIIT", "GFTI"]
     return {"college_types": college_types}
 
+@app.get("/api/quotas")
+async def get_quotas():
+    """Get list of available quotas"""
+    quotas = ["AI", "HS", "OS", "GO", "JK", "LA"]
+    return {"quotas": quotas}
+
+@app.get("/api/genders")
+async def get_genders():
+    """Get list of available gender options"""
+    genders = ["Gender-Neutral", "Female-only (including Supernumerary)"]
+    return {"genders": genders}
+
 @app.get("/api/rounds")
 async def get_rounds():
     """Get list of available rounds"""
@@ -186,7 +176,9 @@ async def predict_preferences(request: PredictionRequest):
             request.category,
             request.college_type,
             request.preferred_branch,
-            request.round_no
+            request.round_no,
+            request.quota,
+            request.gender
         )
         if not is_valid:
             raise HTTPException(status_code=400, detail=error_message)
@@ -198,6 +190,8 @@ async def predict_preferences(request: PredictionRequest):
             college_type=request.college_type,
             preferred_branch=request.preferred_branch,
             round_no=request.round_no,
+            quota=request.quota,
+            gender=request.gender,
             min_probability=request.min_probability
         )
 
