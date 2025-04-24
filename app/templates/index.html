@@ -92,13 +92,19 @@ F<!DOCTYPE html>
                 <h3 class="text-center">Get personalized college recommendations with admission probability predictions</h3>
             </div>
 
-            <!-- New navigation button -->
-<div class="d-flex justify-content-center mb-4">
-    <a href="https://nextstep-nexn.onrender.com" class="btn btn-outline-primary back-to-home">
-        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDEyMDAiIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+CiAgICA8ZyBmaWxsPSIjMDA3YjdiIj4KICAgICAgICA8cGF0aCBkPSJNNzI1IDEwMEw1ODMuMzMgMTUwTDU4My4zMyAyNzVMMzAwIDM1MEwzMDAgMzc1TDU4My4zMyA0NTAuMDQiLz4KICAgICAgICA8cGF0aCBkPSJNMzc1IDUyNUw2MDAgNjAwTDgwMCA0MDBMOTAwIDQwMEw2MDAgNzAwTDMwMCA1NzVMNDAwIDUwMFoiLz4KICAgICAgICA8cGF0aCBkPSJNMzcwIDYyNUwzMDAgNjUwTDMwMCA5MDBMNDAwIDkwMEw0MDAgNzAwTDYwMCA3NzVMODAwIDY3NUw4MDAgOTAwTDkwMCA5MDBMOTAwIDYwMEw2MDAgNzAwTDM3MCA2MjVaIi8+CiAgICA8L2c+CiAgICA8ZyBmaWxsPSIjZDRhZjM3Ij4KICAgICAgICA8cGF0aCBkPSJNNDY1IDcyNUw0OTAgNzc1TDQ2NSA4MjVaIi8+CiAgICAgICAgPHBhdGggZD0iTTU0MCA3MjVMNTY1IDc3NUw1NDAgODI1WiIvPgogICAgICAgIDxwYXRoIGQ9Ik02MTUgNzI1TDY0MCA3NzVMNjE1IDgyNVoiLz4KICAgICAgICA8cGF0aCBkPSJNNjkwIDcyNUw3MTUgNzc1TDY5MCA4MjVaIi8+CiAgICAgICAgPHBhdGggZD0iTTc2NSA3MjVMNzkwIDc3NUw3NjUgODI1WiIvPgogICAgICAgIDxwYXRoIGQ9Ik04NDAgNzI1TDg2NSA3NzVMODQwIDgyNVoiLz4KICAgIDwvZz4KPC9zdmc+" alt="NextStep Logo" class="me-2" style="width: 32px; height: 32px;">
-        <span>Back to NextStep</span>
-    </a>
-</div>
+<!-- Navigation -->
+<nav class="bg-white shadow-md mb-4">
+    <div class="container px-4">
+        <div class="flex items-center justify-between h-16">
+            <div class="d-flex align-items-center">
+                <a href="https://nextstep-nexn.onrender.com" class="d-flex align-items-center text-decoration-none">
+                    <img src="{{ url_for('static', path='/nextstep_logo.jpeg') }}" alt="Logo" class="h-8" style="height: 32px; width: auto;">
+                    <span class="ms-2 fw-bold fs-4">NextStep</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
 
             <form id="preference-form" class="needs-validation" novalidate>
                 <div class="input-section">
