@@ -5,7 +5,9 @@ const ENDPOINTS = {
     categories: '/api/categories',
     collegeTypes: '/api/college-types',
     rounds: '/api/rounds',
-    predict: '/api/predict'
+    predict: '/api/predict',
+    quotas: '/api/quotas',      // New endpoint for quotas
+    genders: '/api/genders'     // New endpoint for genders
 };
 
 // Global Variables
@@ -28,7 +30,9 @@ async function initializeApp() {
             populateDropdown('college-type', ENDPOINTS.collegeTypes),
             populateDropdown('category', ENDPOINTS.categories),
             populateDropdown('preferred-branch', ENDPOINTS.branches),
-            populateDropdown('round-no', ENDPOINTS.rounds)
+            populateDropdown('round-no', ENDPOINTS.rounds),
+            populateDropdown('quota', ENDPOINTS.quotas),       // New quota dropdown
+            populateDropdown('gender', ENDPOINTS.genders)      // New gender dropdown
         ]);
     } catch (error) {
         showError('Failed to initialize application. Please refresh the page.');
@@ -194,6 +198,8 @@ async function handleFormSubmit(event) {
         college_type: document.getElementById('college-type').value,
         preferred_branch: document.getElementById('preferred-branch').value,
         round_no: document.getElementById('round-no').value,
+        quota: document.getElementById('quota').value,         // New quota field
+        gender: document.getElementById('gender').value,       // New gender field
         min_probability: parseFloat(document.getElementById('min-prob').value)
     };
 
@@ -363,9 +369,67 @@ function showError(message) {
 // Utility Functions
 function handleCollegeTypeChange(event) {
     const rankLabel = document.getElementById('rank-label');
-    rankLabel.textContent = event.target.value === 'IIT' 
+    const collegeType = event.target.value;
+    const quotaSelect = document.getElementById('quota');
+    
+    // Update rank label based on college type
+    rankLabel.textContent = collegeType === 'IIT' 
         ? 'Enter your JEE Advanced Rank (OPEN-CRL, Others-Category Rank)'
         : 'Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)';
+    
+    // Update available quotas based on college type
+    updateQuotaOptions(collegeType);
+}
+
+// Update quota options based on college type
+function updateQuotaOptions(collegeType) {
+    const quotaSelect = document.getElementById('quota');
+    
+    // Reset quota dropdown
+    quotaSelect.innerHTML = '<option value="">Select Quota</option>';
+    
+    // Add appropriate options based on college type
+    if (collegeType === 'IIT' || collegeType === 'IIIT') {
+        // Only AI quota for IITs and IIITs
+        const option = document.createElement('option');
+        option.value = 'AI';
+        option.textContent = 'AI';
+        quotaSelect.appendChild(option);
+        
+        // Auto-select AI and disable dropdown
+        quotaSelect.value = 'AI';
+        quotaSelect.disabled = true;
+    } else if (collegeType === 'NIT') {
+        // HS, OS, GO, JK, LA for NITs
+        const options = ['ALL', 'HS', 'OS', 'GO', 'JK', 'LA'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    } else if (collegeType === 'GFTI') {
+        // AI, HS, OS for GFTIs
+        const options = ['ALL', 'AI', 'HS', 'OS'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    } else {
+        // All options for 'ALL' college type
+        const options = ['ALL', 'AI', 'HS', 'OS', 'GO', 'JK', 'LA'];
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            quotaSelect.appendChild(option);
+        });
+        quotaSelect.disabled = false;
+    }
 }
 
 function handleProbabilityChange(event) {
