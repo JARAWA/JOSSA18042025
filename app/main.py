@@ -41,6 +41,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 # Setup templates
 templates = Jinja2Templates(directory=str(CURRENT_DIR / "templates"))
 
+# Add debugging
 @app.on_event("startup")
 async def startup_event():
     print("=== Debug Information ===")
@@ -55,46 +56,6 @@ async def startup_event():
     if (CURRENT_DIR / 'templates').exists():
         print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').glob('*'))}")
     print("=== End Debug Information ===")
-
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    try:
-        return templates.TemplateResponse(
-            "index.html", 
-            {
-                "request": request,
-                "static_url": "/static/"  # Add this to help debug static file paths
-            }
-        )
-    except Exception as e:
-        print(f"Error in root endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-# Add debugging
-@app.on_event("startup")
-async def startup_event():
-    print("=== Debug Information ===")
-    print(f"Current directory: {CURRENT_DIR}")
-    print(f"Templates directory: {CURRENT_DIR / 'templates'}")
-    print(f"Templates directory exists: {(CURRENT_DIR / 'templates').exists()}")
-    if (CURRENT_DIR / 'templates').exists():
-        print(f"Templates directory contents: {list((CURRENT_DIR / 'templates').iterdir())}")
-    print("=== End Debug Information ===")
-
-# Modified root endpoint with error handling
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    """Serve the main application page"""
-    try:
-        template_path = CURRENT_DIR / "templates" / "index.html"
-        print(f"Attempting to load template from: {template_path}")
-        print(f"Template exists: {template_path.exists()}")
-        
-        return templates.TemplateResponse("index.html", {"request": request})
-    except Exception as e:
-        print(f"Error loading template: {str(e)}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Directory contents: {os.listdir(CURRENT_DIR)}")
-        raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 # Configure CORS
 app.add_middleware(
@@ -112,6 +73,8 @@ class PredictionRequest(BaseModel):
     college_type: str
     preferred_branch: str
     round_no: str
+    quota: str
+    gender: str
     min_probability: float = 0.0
 
 class PredictionResponse(BaseModel):
@@ -122,7 +85,17 @@ class PredictionResponse(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Serve the main application page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse(
+            "index.html", 
+            {
+                "request": request,
+                "static_url": "/static/"
+            }
+        )
+    except Exception as e:
+        print(f"Error in root endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
 async def health_check():
@@ -174,6 +147,25 @@ async def get_rounds():
     rounds = ["1", "2", "3", "4", "5", "6"]
     return {"rounds": rounds}
 
+@app.get("/api/quotas/{college_type}")
+async def get_quotas(college_type: str):
+    """Get list of available quotas based on college type"""
+    if college_type.upper() in ["IIT", "IIIT"]:
+        quotas = ["AI"]
+    elif college_type.upper() == "NIT":
+        quotas = ["HS", "OS", "GO", "JK", "LA"]
+    elif college_type.upper() == "GFTI":
+        quotas = ["AI", "HS", "OS"]
+    else:
+        quotas = ["AI", "HS", "OS", "GO", "JK", "LA"]
+    return {"quotas": quotas}
+
+@app.get("/api/genders")
+async def get_genders():
+    """Get list of available gender options"""
+    genders = ["Gender-Neutral", "Female-only"]
+    return {"genders": genders}
+
 @app.post("/api/predict", response_model=PredictionResponse)
 async def predict_preferences(request: PredictionRequest):
     """Generate college preferences based on input criteria"""
@@ -186,7 +178,9 @@ async def predict_preferences(request: PredictionRequest):
             request.category,
             request.college_type,
             request.preferred_branch,
-            request.round_no
+            request.round_no,
+            request.quota,
+            request.gender
         )
         if not is_valid:
             raise HTTPException(status_code=400, detail=error_message)
@@ -198,6 +192,8 @@ async def predict_preferences(request: PredictionRequest):
             college_type=request.college_type,
             preferred_branch=request.preferred_branch,
             round_no=request.round_no,
+            quota=request.quota,
+            gender=request.gender,
             min_probability=request.min_probability
         )
 
