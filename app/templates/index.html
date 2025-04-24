@@ -126,6 +126,17 @@
                                 </select>
                                 <div class="invalid-feedback">Please select a category.</div>
                             </div>
+                            
+                            <!-- New Quota dropdown -->
+                            <div class="mb-3">
+                                <label for="quota" class="form-label">Select Quota</label>
+                                <select class="form-select" id="quota" name="quota" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select your admission quota">
+                                    <option value="">Select Quota</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a quota.</div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -146,6 +157,17 @@
                                     <option value="">Select Round</option>
                                 </select>
                                 <div class="invalid-feedback">Please select a round.</div>
+                            </div>
+                            
+                            <!-- New Gender dropdown -->
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">Select Gender</label>
+                                <select class="form-select" id="gender" name="gender" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select gender filter option">
+                                    <option value="">Select Gender</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a gender option.</div>
                             </div>
 
                             <div class="mb-3">
@@ -212,7 +234,7 @@
                 </div>
             </div>
 
-                        <div class="info-section mt-4">
+            <div class="info-section mt-4">
                 <h3>📚 How to use this tool:</h3>
                 <ol>
                     <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
@@ -225,7 +247,15 @@
                         </ul>
                     </li>
                     <li>Select your category (OPEN/OBC-NCL/SC/ST/EWS)</li>
+                    <li>Select your quota:
+                        <ul>
+                            <li>For IITs/IIITs: AI (All India) is the only option</li>
+                            <li>For NITs: HS (Home State), OS (Other State), GO, JK, LA</li>
+                            <li>For GFTIs: AI, HS, OS options</li>
+                        </ul>
+                    </li>
                     <li>Select your preferred branch (optional)</li>
+                    <li>Select the gender filter option</li>
                     <li>Choose the counselling round</li>
                     <li>Set minimum admission probability threshold</li>
                     <li>Click on "Generate Preferences"</li>
@@ -323,4 +353,3 @@
     <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 </body>
 </html>
-            
