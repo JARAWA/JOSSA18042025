@@ -277,27 +277,27 @@ body {
     background-color: #f8f9fa;
 }
 
-.back-to-home {
-    font-size: 1.1rem;
-    padding: 0.5rem 1.5rem;
-    border-radius: 8px;
+/* Add this CSS to your main.css file or inside a <style> tag in the head section */
+nav {
+    margin-bottom: 1.5rem;
+}
+
+nav a {
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.back-to-home:hover {
-    background-color: #007b7b;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+nav a:hover {
+    opacity: 0.8;
 }
 
-.back-to-home img {
-    transition: transform 0.3s ease;
+nav a img {
+    height: 32px;
+    width: auto;
+    margin-right: 0.5rem;
 }
 
-.back-to-home:hover img {
-    transform: scale(1.1);
+nav a span {
+    font-weight: bold;
+    font-size: 1.25rem;
+    color: #333;
 }
