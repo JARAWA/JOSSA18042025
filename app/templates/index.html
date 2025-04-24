@@ -93,146 +93,152 @@
             </div>
 
             <form id="preference-form" class="needs-validation" novalidate>
-                <div class="input-section">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="college-type" class="form-label">Select College Type</label>
-                                <select class="form-select" id="college-type" name="college-type" required 
-                                        data-bs-toggle="tooltip" data-bs-placement="top" 
-                                        title="Select the type of college you're interested in">
-                                    <option value="">Select College Type</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a college type.</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="jee-rank" class="form-label" id="rank-label">
-                                    Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)
-                                </label>
-                                <input type="number" class="form-control" id="jee-rank" name="jee-rank"
-                                       min="1" required placeholder="Enter your rank"
-                                       data-bs-toggle="tooltip" data-bs-placement="top"
-                                       title="Enter your JEE rank according to the selected college type">
-                                <div class="invalid-feedback">Please enter a valid rank (greater than 0).</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="category" class="form-label">Select Category</label>
-                                <select class="form-select" id="category" name="category" required
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Select your admission category">
-                                    <option value="">Select Category</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a category.</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
-                                <select class="form-select" id="preferred-branch" name="preferred-branch" required
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Select your preferred branch of study">
-                                    <option value="">Select Branch</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a branch.</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="round-no" class="form-label">Select Round</label>
-                                <select class="form-select" id="round-no" name="round-no" required
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Select the counselling round">
-                                    <option value="">Select Round</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a round.</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="min-prob" class="form-label">
-                                    Minimum Admission Probability (%): <span id="prob-value">30</span>
-                                </label>
-                                <input type="range" class="form-range" id="min-prob" name="min-prob"
-                                       min="0" max="100" step="5" value="30"
-                                       data-bs-toggle="tooltip" data-bs-placement="top"
-                                       title="Set the minimum probability threshold for college suggestions">
-                            </div>
-                        </div>
-                    </div>
+    <div class="input-section">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="college-type" class="form-label">Select College Type</label>
+                    <select class="form-select" id="college-type" name="college-type" required 
+                            data-bs-toggle="tooltip" data-bs-placement="top" 
+                            title="Select the type of college you're interested in">
+                        <option value="">Select College Type</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a college type.</div>
                 </div>
 
-                <div class="button-row">
-                    <button type="submit" id="generate-btn" class="btn btn-primary btn-lg">
-                        <span class="button-content">
-                            <i class="fas fa-search"></i> Generate Preferences
-                        </span>
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    </button>
-                    <button type="button" id="download-btn" class="btn btn-secondary btn-lg" disabled>
-                        <i class="fas fa-download"></i> Download Excel
-                    </button>
+                <div class="mb-3">
+                    <label for="jee-rank" class="form-label" id="rank-label">
+                        Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)
+                    </label>
+                    <input type="number" class="form-control" id="jee-rank" name="jee-rank"
+                           min="1" required placeholder="Enter your rank"
+                           data-bs-toggle="tooltip" data-bs-placement="top"
+                           title="Enter your JEE rank according to the selected college type">
+                    <div class="invalid-feedback">Please enter a valid rank (greater than 0).</div>
                 </div>
-            </form>
 
-            <!-- Loading Overlay -->
-            <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none">
-                <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Generating your preferences...</p>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Select Category</label>
+                    <select class="form-select" id="category" name="category" required
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Select your admission category">
+                        <option value="">Select Category</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a category.</div>
+                </div>
+
+                <!-- New Quota Field -->
+                <div class="mb-3">
+                    <label for="quota" class="form-label">Select Quota</label>
+                    <select class="form-select" id="quota" name="quota" required
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Select your applicable quota">
+                        <option value="">Select Quota</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a quota.</div>
                 </div>
             </div>
-
-            <!-- Results Section -->
-            <div class="output-section" id="output-section" style="display: none;">
-                <h4>College Preferences</h4>
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="results-table">
-                        <thead>
-                            <tr>
-                                <th scope="col" class="sortable" data-sort="preference">Preference <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="institute">Institute <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="collegeType">College Type <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="location">Location <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="branch">Branch <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="openingRank">Opening Rank <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="closingRank">Closing Rank <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="probability">Admission Probability (%) <i class="fas fa-sort"></i></th>
-                                <th scope="col" class="sortable" data-sort="chances">Admission Chances <i class="fas fa-sort"></i></th>
-                            </tr>
-                        </thead>
-                        <tbody id="results-body"></tbody>
-                    </table>
+            <div class="col-md-6">
+                <!-- New Gender Field -->
+                <div class="mb-3">
+                    <label for="gender" class="form-label">Select Gender</label>
+                    <select class="form-select" id="gender" name="gender" required
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Select your gender preference">
+                        <option value="">Select Gender</option>
+                        <option value="Gender-Neutral">Gender-Neutral</option>
+                        <option value="Female-only">Female-only</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a gender preference.</div>
                 </div>
 
-                <div class="mt-4">
-                    <h4>Probability Distribution</h4>
-                    <div id="plot-container" style="width: 100%; height: 400px;"></div>
+                <div class="mb-3">
+                    <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
+                    <select class="form-select" id="preferred-branch" name="preferred-branch" required
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Select your preferred branch of study">
+                        <option value="">Select Branch</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a branch.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="round-no" class="form-label">Select Round</label>
+                    <select class="form-select" id="round-no" name="round-no" required
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Select the counselling round">
+                        <option value="">Select Round</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a round.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="min-prob" class="form-label">
+                        Minimum Admission Probability (%): <span id="prob-value">30</span>
+                    </label>
+                    <input type="range" class="form-range" id="min-prob" name="min-prob"
+                           min="0" max="100" step="5" value="30"
+                           data-bs-toggle="tooltip" data-bs-placement="top"
+                           title="Set the minimum probability threshold for college suggestions">
                 </div>
             </div>
+        </div>
+    </div>
 
-                        <div class="info-section mt-4">
-                <h3>📚 How to use this tool:</h3>
-                <ol>
-                    <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
-                    <li>Enter your rank:
-                        <ul>
-                            <li>For IITs: Enter your JEE Advanced rank</li>
-                            <li>For NITs/IIITs/GFTIs: Enter your JEE Main rank</li>
-                            <li>For OPEN category: Enter CRL (Common Rank List) rank</li>
-                            <li>For other categories: Enter your category rank</li>
-                        </ul>
-                    </li>
-                    <li>Select your category (OPEN/OBC-NCL/SC/ST/EWS)</li>
-                    <li>Select your preferred branch (optional)</li>
-                    <li>Choose the counselling round</li>
-                    <li>Set minimum admission probability threshold</li>
-                    <li>Click on "Generate Preferences"</li>
-                    <li>Use the Download Excel button to save the results</li>
-                </ol>
+    <!-- Rest of the form remains the same -->
 
-                <h3>⚠️ Disclaimer:</h3>
+<!-- In the results table, add new columns for Quota and Gender -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover" id="results-table">
+        <thead>
+            <tr>
+                <th scope="col" class="sortable" data-sort="preference">Preference <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="institute">Institute <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="collegeType">College Type <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="location">Location <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="branch">Branch <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="quota">Quota <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="gender">Gender <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="openingRank">Opening Rank <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="closingRank">Closing Rank <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="probability">Admission Probability (%) <i class="fas fa-sort"></i></th>
+                <th scope="col" class="sortable" data-sort="chances">Admission Chances <i class="fas fa-sort"></i></th>
+            </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+    </table>
+</div>
+
+<!-- Update the How to use section -->
+<div class="info-section mt-4">
+    <h3>📚 How to use this tool:</h3>
+    <ol>
+        <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
+        <li>Enter your rank:
+            <ul>
+                <li>For IITs: Enter your JEE Advanced rank</li>
+                <li>For NITs/IIITs/GFTIs: Enter your JEE Main rank</li>
+                <li>For OPEN category: Enter CRL (Common Rank List) rank</li>
+                <li>For other categories: Enter your category rank</li>
+            </ul>
+        </li>
+        <li>Select your category (OPEN/OBC-NCL/SC/ST/EWS)</li>
+        <li>Select your applicable quota:
+            <ul>
+                <li>For IITs/IIITs: Only AI (All India) quota is available</li>
+                <li>For NITs: Choose from HS (Home State), OS (Other State), GO, JK, LA</li>
+                <li>For GFTIs: Choose from AI, HS, OS quotas</li>
+            </ul>
+        </li>
+        <li>Select your gender preference (Gender-Neutral or Female-only)</li>
+        <li>Select your preferred branch (optional)</li>
+        <li>Choose the counselling round</li>
+        <li>Set minimum admission probability threshold</li>
+        <li>Click on "Generate Preferences"</li>
+        <li>Use the Download Excel button to save the results</li>
+    </ol>
+
+    <h3>⚠️ Disclaimer:</h3>
                 <ul>
                     <li>This tool provides suggestions based on previous year's cutoff data</li>
                     <li>The admission probabilities are estimates based on historical data</li>
