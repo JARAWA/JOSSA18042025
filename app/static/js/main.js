@@ -5,6 +5,8 @@ const ENDPOINTS = {
     categories: '/api/categories',
     collegeTypes: '/api/college-types',
     rounds: '/api/rounds',
+    quotas: '/api/quotas',
+    genders: '/api/genders',
     predict: '/api/predict'
 };
 
@@ -28,8 +30,10 @@ async function initializeApp() {
             populateDropdown('college-type', ENDPOINTS.collegeTypes),
             populateDropdown('category', ENDPOINTS.categories),
             populateDropdown('preferred-branch', ENDPOINTS.branches),
-            populateDropdown('round-no', ENDPOINTS.rounds)
+            populateDropdown('round-no', ENDPOINTS.rounds),
+            populateDropdown('gender', ENDPOINTS.genders)
         ]);
+        // Quota will be populated based on college type selection
     } catch (error) {
         showError('Failed to initialize application. Please refresh the page.');
         console.error('Initialization error:', error);
@@ -46,17 +50,14 @@ async function populateDropdown(elementId, endpoint) {
         const select = document.getElementById(elementId);
         select.innerHTML = '<option value="">Select option</option>';
         
-        // Handle different possible API response structures
         let options = [];
         if (Array.isArray(data)) {
             options = data;
         } else if (typeof data === 'object') {
-            // If data is an object, get the first property's array value
             const firstKey = Object.keys(data)[0];
             if (Array.isArray(data[firstKey])) {
                 options = data[firstKey];
             } else {
-                // If the structure is different, try to extract options from the response
                 options = Object.values(data).find(val => Array.isArray(val)) || [];
             }
         }
@@ -73,13 +74,43 @@ async function populateDropdown(elementId, endpoint) {
     }
 }
 
+// Populate Quota based on College Type
+async function updateQuotaOptions(collegeType) {
+    try {
+        const response = await fetch(`${API_URL}${ENDPOINTS.quotas}/${collegeType}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        const quotaSelect = document.getElementById('quota');
+        quotaSelect.innerHTML = '<option value="">Select Quota</option>';
+        
+        data.quotas.forEach(quota => {
+            const option = document.createElement('option');
+            option.value = quota;
+            option.textContent = quota;
+            quotaSelect.appendChild(option);
+        });
+        
+        quotaSelect.disabled = false;
+    } catch (error) {
+        console.error('Error updating quota options:', error);
+        showError('Failed to update quota options');
+    }
+}
+
 // Event Listeners
 function initializeEventListeners() {
     // Form submission
     document.getElementById('preference-form').addEventListener('submit', handleFormSubmit);
     
     // College type change
-    document.getElementById('college-type').addEventListener('change', handleCollegeTypeChange);
+    const collegeTypeSelect = document.getElementById('college-type');
+    collegeTypeSelect.addEventListener('change', async (event) => {
+        handleCollegeTypeChange(event);
+        if (event.target.value) {
+            await updateQuotaOptions(event.target.value);
+        }
+    });
     
     // Probability slider
     document.getElementById('min-prob').addEventListener('input', handleProbabilityChange);
@@ -194,6 +225,8 @@ async function handleFormSubmit(event) {
         college_type: document.getElementById('college-type').value,
         preferred_branch: document.getElementById('preferred-branch').value,
         round_no: document.getElementById('round-no').value,
+        quota: document.getElementById('quota').value,
+        gender: document.getElementById('gender').value,
         min_probability: parseFloat(document.getElementById('min-prob').value)
     };
 
@@ -242,10 +275,8 @@ function displayResults(data) {
     const outputSection = document.getElementById('output-section');
     const tableBody = document.getElementById('results-body');
     
-    // Clear previous results
     tableBody.innerHTML = '';
     
-    // Populate table
     data.preferences.forEach(pref => {
         const row = tableBody.insertRow();
         Object.values(pref).forEach(value => {
@@ -254,7 +285,6 @@ function displayResults(data) {
         });
     });
 
-    // Create plot if data available
     if (data.plot_data) {
         createPlot(data.plot_data);
     }
@@ -318,6 +348,29 @@ function validateForm() {
         form.classList.add('was-validated');
         return false;
     }
+    
+    // Additional validation for quota based on college type
+    const collegeType = document.getElementById('college-type').value;
+    const quota = document.getElementById('quota').value;
+    
+    if (!quota) {
+        showError('Please select a quota');
+        return false;
+    }
+    
+    // Validate quota based on college type
+    const validQuotas = {
+        'IIT': ['AI'],
+        'IIIT': ['AI'],
+        'NIT': ['HS', 'OS', 'GO', 'JK', 'LA'],
+        'GFTI': ['AI', 'HS', 'OS']
+    };
+    
+    if (validQuotas[collegeType] && !validQuotas[collegeType].includes(quota)) {
+        showError(`Invalid quota selection for ${collegeType}`);
+        return false;
+    }
+    
     return true;
 }
 
