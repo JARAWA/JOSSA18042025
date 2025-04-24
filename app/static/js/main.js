@@ -101,22 +101,41 @@ async function updateQuotaOptions(collegeType) {
 // Event Listeners
 function initializeEventListeners() {
     // Form submission
-    document.getElementById('preference-form').addEventListener('submit', handleFormSubmit);
+    const form = document.getElementById('preference-form');
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    } else {
+        console.error("Form element 'preference-form' not found");
+    }
     
     // College type change
     const collegeTypeSelect = document.getElementById('college-type');
-    collegeTypeSelect.addEventListener('change', async (event) => {
-        handleCollegeTypeChange(event);
-        if (event.target.value) {
-            await updateQuotaOptions(event.target.value);
-        }
-    });
+    if (collegeTypeSelect) {
+        collegeTypeSelect.addEventListener('change', async (event) => {
+            handleCollegeTypeChange(event);
+            if (event.target.value) {
+                await updateQuotaOptions(event.target.value);
+            }
+        });
+    } else {
+        console.error("Element 'college-type' not found");
+    }
     
     // Probability slider
-    document.getElementById('min-prob').addEventListener('input', handleProbabilityChange);
+    const probSlider = document.getElementById('min-prob');
+    if (probSlider) {
+        probSlider.addEventListener('input', handleProbabilityChange);
+    } else {
+        console.error("Element 'min-prob' not found");
+    }
     
     // Download button
-    document.getElementById('download-btn').addEventListener('click', handleDownload);
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', handleDownload);
+    } else {
+        console.error("Element 'download-btn' not found");
+    }
     
     // Initialize table header click events for sorting
     initializeTableSorting();
