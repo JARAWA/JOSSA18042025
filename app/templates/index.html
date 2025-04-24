@@ -251,17 +251,20 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
-<!-- Replace the initializeApp function in your index.html -->
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<!-- Load main.js FIRST - it defines window.initializeMainApp -->
+<script src="{{ url_for('static', path='/js/main.js') }}"></script>
+
+<!-- Authentication initialization script -->
 <script>
-    // Initialize app - this will be called only after auth verification succeeds
+    // Initialize app - this will be called after auth verification succeeds
     window.initializeApp = function() {
-        console.log('App initialized after successful authentication');
+        console.log('Auth verification successful, initializing app...');
         
         // Hide loading overlay
         document.getElementById('auth-loading').style.display = 'none';
@@ -281,21 +284,74 @@
             `;
         }
         
-        // Initialize your main application logic here
+        // Check if main app initialization function is available
         if (typeof window.initializeMainApp === 'function') {
-            window.initializeMainApp();
+            console.log('Initializing main application...');
+            try {
+                window.initializeMainApp();
+            } catch (error) {
+                console.error('Error initializing main application:', error);
+                
+                // Show error to user
+                if (alertContainer) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Application Error:</strong> Failed to initialize application. Please refresh the page or contact support.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                }
+            }
         } else {
             console.error('initializeMainApp function not found. Make sure main.js is properly loaded.');
-            showError('Application initialization failed. Please refresh the page or contact support.');
+            
+            // Show error to user
+            if (alertContainer) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Application Error:</strong> Failed to initialize application. Please refresh the page or contact support.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
         }
     };
+    
+    // Function to stop all processes if authentication fails
+    window.stopAllProcesses = function() {
+        console.log('Authentication failed, stopping all processes...');
+        
+        // Hide loading overlay
+        document.getElementById('auth-loading').style.display = 'none';
+        
+        // Show error message
+        const alertContainer = document.getElementById('error-alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+        
+        // Show auth error container
+        const authErrorContainer = document.getElementById('auth-error-container');
+        if (authErrorContainer) {
+            authErrorContainer.style.display = 'block';
+            authErrorContainer.innerHTML = `
+                <h2>Authentication Required</h2>
+                <p>Please access this tool through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
+            `;
+        }
+        
+        // Keep main content hidden
+        document.getElementById('main-content').style.display = 'none';
+    };
 </script>
-    
-    <!-- Authentication verification script -->
-    <script type="module" src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
-    
-    <!-- Main application script -->
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+
+<!-- Load Auth Verification script LAST -->
+<script type="module" src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
 </body>
 </html>
             
