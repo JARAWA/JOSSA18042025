@@ -35,6 +35,8 @@ def load_data() -> Optional[pd.DataFrame]:
         df["Category"] = df["Category"].str.lower()
         df["Academic Program Name"] = df["Academic Program Name"].str.lower()
         df["College Type"] = df["College Type"].str.upper()
+        df["Quota"] = df["Quota"].str.upper()
+        df["Gender"] = df["Gender"].str.strip()
         
         return df
     except Exception as e:
@@ -63,7 +65,9 @@ def validate_inputs(
     category: str,
     college_type: str,
     preferred_branch: str,
-    round_no: str
+    round_no: str,
+    quota: str,
+    gender: str
 ) -> Tuple[bool, str]:
     """
     Validate user inputs
@@ -74,6 +78,8 @@ def validate_inputs(
         college_type (str): College type
         preferred_branch (str): Preferred branch
         round_no (str): Round number
+        quota (str): Seat quota
+        gender (str): Gender preference
     
     Returns:
         Tuple[bool, str]: (is_valid, error_message)
@@ -89,6 +95,26 @@ def validate_inputs(
         return False, "Please select a branch"
     if not round_no:
         return False, "Please select a round"
+    if not quota:
+        return False, "Please select a quota"
+    if not gender:
+        return False, "Please select a gender"
+    
+    # Validate quota based on college type
+    valid_quotas = {
+        "IIT": ["AI"],
+        "IIIT": ["AI"],
+        "NIT": ["HS", "OS", "GO", "JK", "LA"],
+        "GFTI": ["AI", "HS", "OS"]
+    }
+    
+    if college_type.upper() in valid_quotas and quota.upper() not in valid_quotas[college_type.upper()]:
+        return False, f"Invalid quota for {college_type}"
+    
+    # Validate gender
+    if gender not in ["Gender-Neutral", "Female-only"]:
+        return False, "Invalid gender selection"
+    
     return True, ""
 
 def hybrid_probability_calculation(rank: int, opening_rank: float, closing_rank: float) -> float:
@@ -180,6 +206,8 @@ def generate_preference_list(
     college_type: str,
     preferred_branch: str,
     round_no: str,
+    quota: str,
+    gender: str,
     min_probability: float = 0
 ) -> Tuple[pd.DataFrame, Dict]:
     """
@@ -191,6 +219,8 @@ def generate_preference_list(
         college_type (str): College type
         preferred_branch (str): Preferred branch
         round_no (str): Round number
+        quota (str): Seat quota
+        gender (str): Gender preference
         min_probability (float): Minimum probability threshold
     
     Returns:
@@ -209,6 +239,13 @@ def generate_preference_list(
         if preferred_branch.lower() != "all":
             df = df[df["Academic Program Name"] == preferred_branch.lower()]
         df = df[df["Round"] == str(round_no)]
+        df = df[df["Quota"] == quota.upper()]
+        
+        # Apply gender filter
+        if gender == "Gender-Neutral":
+            df = df[df["Gender"] == "Gender-Neutral"]
+        else:
+            df = df[df["Gender"].isin(["Female-only", "Female-only (Supernumerary)"])]
 
         if df.empty:
             return pd.DataFrame(), {"x": [], "type": "histogram", "nbinsx": 20}
@@ -259,6 +296,8 @@ def generate_preference_list(
             'Academic Program Name',
             'Opening Rank',
             'Closing Rank',
+            'Quota',
+            'Gender',
             'Admission Probability (%)',
             'Admission Chances'
         ]].rename(columns={
