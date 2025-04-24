@@ -93,152 +93,180 @@
             </div>
 
             <form id="preference-form" class="needs-validation" novalidate>
-    <div class="input-section">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="college-type" class="form-label">Select College Type</label>
-                    <select class="form-select" id="college-type" name="college-type" required 
-                            data-bs-toggle="tooltip" data-bs-placement="top" 
-                            title="Select the type of college you're interested in">
-                        <option value="">Select College Type</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a college type.</div>
+                <div class="input-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="college-type" class="form-label">Select College Type</label>
+                                <select class="form-select" id="college-type" name="college-type" required 
+                                        data-bs-toggle="tooltip" data-bs-placement="top" 
+                                        title="Select the type of college you're interested in">
+                                    <option value="">Select College Type</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a college type.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="jee-rank" class="form-label" id="rank-label">
+                                    Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)
+                                </label>
+                                <input type="number" class="form-control" id="jee-rank" name="jee-rank"
+                                       min="1" required placeholder="Enter your rank"
+                                       data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="Enter your JEE rank according to the selected college type">
+                                <div class="invalid-feedback">Please enter a valid rank (greater than 0).</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Select Category</label>
+                                <select class="form-select" id="category" name="category" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select your admission category">
+                                    <option value="">Select Category</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a category.</div>
+                            </div>
+
+                            <!-- New Quota Field -->
+                            <div class="mb-3">
+                                <label for="quota" class="form-label">Select Quota</label>
+                                <select class="form-select" id="quota" name="quota" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select your applicable quota">
+                                    <option value="">Select Quota</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a quota.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- New Gender Field -->
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">Select Gender</label>
+                                <select class="form-select" id="gender" name="gender" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select your gender preference">
+                                    <option value="">Select Gender</option>
+                                    <option value="Gender-Neutral">Gender-Neutral</option>
+                                    <option value="Female-only">Female-only</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a gender preference.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
+                                <select class="form-select" id="preferred-branch" name="preferred-branch" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select your preferred branch of study">
+                                    <option value="">Select Branch</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a branch.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="round-no" class="form-label">Select Round</label>
+                                <select class="form-select" id="round-no" name="round-no" required
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Select the counselling round">
+                                    <option value="">Select Round</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a round.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="min-prob" class="form-label">
+                                    Minimum Admission Probability (%): <span id="prob-value">30</span>
+                                </label>
+                                <input type="range" class="form-range" id="min-prob" name="min-prob"
+                                       min="0" max="100" step="5" value="30"
+                                       data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="Set the minimum probability threshold for college suggestions">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="jee-rank" class="form-label" id="rank-label">
-                        Enter your JEE Main Rank (OPEN-CRL, Others-Category Rank)
-                    </label>
-                    <input type="number" class="form-control" id="jee-rank" name="jee-rank"
-                           min="1" required placeholder="Enter your rank"
-                           data-bs-toggle="tooltip" data-bs-placement="top"
-                           title="Enter your JEE rank according to the selected college type">
-                    <div class="invalid-feedback">Please enter a valid rank (greater than 0).</div>
+                <div class="button-row text-center mt-4">
+                    <button type="submit" id="generate-btn" class="btn btn-primary btn-lg">
+                        <span class="button-content">
+                            <i class="fas fa-search"></i> Generate Preferences
+                        </span>
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                    <button type="button" id="download-btn" class="btn btn-secondary btn-lg ms-2" disabled>
+                        <i class="fas fa-download"></i> Download Excel
+                    </button>
                 </div>
+            </form>
 
-                <div class="mb-3">
-                    <label for="category" class="form-label">Select Category</label>
-                    <select class="form-select" id="category" name="category" required
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Select your admission category">
-                        <option value="">Select Category</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a category.</div>
-                </div>
-
-                <!-- New Quota Field -->
-                <div class="mb-3">
-                    <label for="quota" class="form-label">Select Quota</label>
-                    <select class="form-select" id="quota" name="quota" required
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Select your applicable quota">
-                        <option value="">Select Quota</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a quota.</div>
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none">
+                <div class="d-flex flex-column justify-content-center align-items-center h-100" style="background: rgba(255, 255, 255, 0.8);">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating your preferences...</p>
                 </div>
             </div>
-            <div class="col-md-6">
-                <!-- New Gender Field -->
-                <div class="mb-3">
-                    <label for="gender" class="form-label">Select Gender</label>
-                    <select class="form-select" id="gender" name="gender" required
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Select your gender preference">
-                        <option value="">Select Gender</option>
-                        <option value="Gender-Neutral">Gender-Neutral</option>
-                        <option value="Female-only">Female-only</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a gender preference.</div>
+
+            <!-- Results Section -->
+            <div id="output-section" class="mt-5" style="display: none;">
+                <h4>College Preferences</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="results-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="sortable" data-sort="preference">Preference <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="institute">Institute <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="collegeType">College Type <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="location">Location <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="branch">Branch <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="quota">Quota <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="gender">Gender <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="openingRank">Opening Rank <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="closingRank">Closing Rank <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="probability">Admission Probability (%) <i class="fas fa-sort"></i></th>
+                                <th scope="col" class="sortable" data-sort="chances">Admission Chances <i class="fas fa-sort"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body"></tbody>
+                    </table>
                 </div>
 
-                <div class="mb-3">
-                    <label for="preferred-branch" class="form-label">Select Preferred Branch</label>
-                    <select class="form-select" id="preferred-branch" name="preferred-branch" required
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Select your preferred branch of study">
-                        <option value="">Select Branch</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a branch.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="round-no" class="form-label">Select Round</label>
-                    <select class="form-select" id="round-no" name="round-no" required
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Select the counselling round">
-                        <option value="">Select Round</option>
-                    </select>
-                    <div class="invalid-feedback">Please select a round.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="min-prob" class="form-label">
-                        Minimum Admission Probability (%): <span id="prob-value">30</span>
-                    </label>
-                    <input type="range" class="form-range" id="min-prob" name="min-prob"
-                           min="0" max="100" step="5" value="30"
-                           data-bs-toggle="tooltip" data-bs-placement="top"
-                           title="Set the minimum probability threshold for college suggestions">
+                <div class="mt-4">
+                    <h4>Probability Distribution</h4>
+                    <div id="plot-container" style="width: 100%; height: 400px;"></div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Rest of the form remains the same -->
+            <div class="info-section mt-4">
+                <h3>📚 How to use this tool:</h3>
+                <ol>
+                    <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
+                    <li>Enter your rank:
+                        <ul>
+                            <li>For IITs: Enter your JEE Advanced rank</li>
+                            <li>For NITs/IIITs/GFTIs: Enter your JEE Main rank</li>
+                            <li>For OPEN category: Enter CRL (Common Rank List) rank</li>
+                            <li>For other categories: Enter your category rank</li>
+                        </ul>
+                    </li>
+                    <li>Select your category (OPEN/OBC-NCL/SC/ST/EWS)</li>
+                    <li>Select your applicable quota:
+                        <ul>
+                            <li>For IITs/IIITs: Only AI (All India) quota is available</li>
+                            <li>For NITs: Choose from HS (Home State), OS (Other State), GO, JK, LA</li>
+                            <li>For GFTIs: Choose from AI, HS, OS quotas</li>
+                        </ul>
+                    </li>
+                    <li>Select your gender preference (Gender-Neutral or Female-only)</li>
+                    <li>Select your preferred branch (optional)</li>
+                    <li>Choose the counselling round</li>
+                    <li>Set minimum admission probability threshold</li>
+                    <li>Click on "Generate Preferences"</li>
+                    <li>Use the Download Excel button to save the results</li>
+                </ol>
 
-<!-- In the results table, add new columns for Quota and Gender -->
-<div class="table-responsive">
-    <table class="table table-striped table-hover" id="results-table">
-        <thead>
-            <tr>
-                <th scope="col" class="sortable" data-sort="preference">Preference <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="institute">Institute <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="collegeType">College Type <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="location">Location <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="branch">Branch <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="quota">Quota <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="gender">Gender <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="openingRank">Opening Rank <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="closingRank">Closing Rank <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="probability">Admission Probability (%) <i class="fas fa-sort"></i></th>
-                <th scope="col" class="sortable" data-sort="chances">Admission Chances <i class="fas fa-sort"></i></th>
-            </tr>
-        </thead>
-        <tbody id="results-body"></tbody>
-    </table>
-</div>
-
-<!-- Update the How to use section -->
-<div class="info-section mt-4">
-    <h3>📚 How to use this tool:</h3>
-    <ol>
-        <li>First, select the type of college (IIT/NIT/IIIT/GFTI)</li>
-        <li>Enter your rank:
-            <ul>
-                <li>For IITs: Enter your JEE Advanced rank</li>
-                <li>For NITs/IIITs/GFTIs: Enter your JEE Main rank</li>
-                <li>For OPEN category: Enter CRL (Common Rank List) rank</li>
-                <li>For other categories: Enter your category rank</li>
-            </ul>
-        </li>
-        <li>Select your category (OPEN/OBC-NCL/SC/ST/EWS)</li>
-        <li>Select your applicable quota:
-            <ul>
-                <li>For IITs/IIITs: Only AI (All India) quota is available</li>
-                <li>For NITs: Choose from HS (Home State), OS (Other State), GO, JK, LA</li>
-                <li>For GFTIs: Choose from AI, HS, OS quotas</li>
-            </ul>
-        </li>
-        <li>Select your gender preference (Gender-Neutral or Female-only)</li>
-        <li>Select your preferred branch (optional)</li>
-        <li>Choose the counselling round</li>
-        <li>Set minimum admission probability threshold</li>
-        <li>Click on "Generate Preferences"</li>
-        <li>Use the Download Excel button to save the results</li>
-    </ol>
-
-    <h3>⚠️ Disclaimer:</h3>
+                <h3>⚠️ Disclaimer:</h3>
                 <ul>
                     <li>This tool provides suggestions based on previous year's cutoff data</li>
                     <li>The admission probabilities are estimates based on historical data</li>
@@ -251,56 +279,69 @@
         </div>
     </div>
 
-<!-- Scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-<!-- Load Firebase SDKs directly in HTML (not through module imports) -->
-<script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+    <!-- Load Firebase SDKs directly in HTML -->
+    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
 
-<!-- Load main.js FIRST - it defines window.initializeMainApp -->
-<script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    <!-- Load main.js FIRST - it defines window.initializeMainApp -->
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 
-<!-- Authentication initialization script -->
-<script>
-    // Initialize app - this will be called after auth verification succeeds
-    window.initializeApp = function() {
-        console.log('Auth verification successful, initializing app...');
-        
-        // Hide loading overlay
-        const authLoading = document.getElementById('auth-loading');
-        if (authLoading) {
-            authLoading.style.display = 'none';
-        }
-        
-        // Show main content
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            mainContent.style.display = 'block';
-        }
-        
-        // Show welcome message if user info is available
-        const alertContainer = document.getElementById('error-alert-container');
-        if (alertContainer && window.AuthVerification && window.AuthVerification.user) {
-            const userEmail = window.AuthVerification.user.email;
-            alertContainer.innerHTML = `
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>Welcome!</strong> You're logged in as ${userEmail}.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-        }
-        
-        // Check if main app initialization function is available
-        if (typeof window.initializeMainApp === 'function') {
-            console.log('Initializing main application...');
-            try {
-                window.initializeMainApp();
-            } catch (error) {
-                console.error('Error initializing main application:', error);
+    <!-- Authentication initialization script -->
+    <script>
+        // Initialize app - this will be called after auth verification succeeds
+        window.initializeApp = function() {
+            console.log('Auth verification successful, initializing app...');
+            
+            // Hide loading overlay
+            const authLoading = document.getElementById('auth-loading');
+            if (authLoading) {
+                authLoading.style.display = 'none';
+            }
+            
+            // Show main content
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                mainContent.style.display = 'block';
+            }
+            
+            // Show welcome message if user info is available
+            const alertContainer = document.getElementById('error-alert-container');
+            if (alertContainer && window.AuthVerification && window.AuthVerification.user) {
+                const userEmail = window.AuthVerification.user.email;
+                alertContainer.innerHTML = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Welcome!</strong> You're logged in as ${userEmail}.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
+            
+            // Check if main app initialization function is available
+            if (typeof window.initializeMainApp === 'function') {
+                console.log('Initializing main application...');
+                try {
+                    window.initializeMainApp();
+                } catch (error) {
+                    console.error('Error initializing main application:', error);
+                    
+                    // Show error to user
+                    if (alertContainer) {
+                        alertContainer.innerHTML = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong>Application Error:</strong> Failed to initialize application. Please refresh the page or contact support.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                console.error('initializeMainApp function not found. Make sure main.js is properly loaded.');
                 
                 // Show error to user
                 if (alertContainer) {
@@ -312,94 +353,80 @@
                     `;
                 }
             }
-        } else {
-            console.error('initializeMainApp function not found. Make sure main.js is properly loaded.');
-            
-            // Show error to user
-            if (alertContainer) {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Application Error:</strong> Failed to initialize application. Please refresh the page or contact support.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-        }
-    };
-    
-    // Function to stop all processes if authentication fails
-    window.stopAllProcesses = function() {
-        console.log('Authentication failed, stopping all processes...');
+        };
         
-        // Hide loading overlay
-        document.getElementById('auth-loading').style.display = 'none';
-        
-        // Show error message
-        const alertContainer = document.getElementById('error-alert-container');
-        if (alertContainer) {
-            alertContainer.innerHTML = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-        }
-        
-        // Show auth error container
-        const authErrorContainer = document.getElementById('auth-error-container');
-        if (authErrorContainer) {
-            authErrorContainer.style.display = 'block';
-            authErrorContainer.innerHTML = `
-                <h2>Authentication Required</h2>
-                <p>Please access this tool through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
-            `;
-        }
-        
-        // Keep main content hidden
-        document.getElementById('main-content').style.display = 'none';
-    };
-    
-    // Authentication timeout safety - in case verification gets stuck
-    setTimeout(function() {
-        const authLoading = document.getElementById('auth-loading');
-        const mainContent = document.getElementById('main-content');
-        
-        if (authLoading && authLoading.style.display !== 'none') {
-            console.log('Authentication verification timeout reached, forcing initialization');
+        // Function to stop all processes if authentication fails
+        window.stopAllProcesses = function() {
+            console.log('Authentication failed, stopping all processes...');
             
             // Hide loading overlay
-            authLoading.style.display = 'none';
+            document.getElementById('auth-loading').style.display = 'none';
             
-            // Show main content
-            if (mainContent) {
-                mainContent.style.display = 'block';
-            }
-            
-            // Show warning message
+            // Show error message
             const alertContainer = document.getElementById('error-alert-container');
             if (alertContainer) {
                 alertContainer.innerHTML = `
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <strong>Warning:</strong> Authentication verification timed out. Some features may be limited.
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 `;
             }
             
-            // Try to initialize application
-            if (typeof window.initializeMainApp === 'function') {
-                try {
-                    window.initializeMainApp();
-                } catch (error) {
-                    console.error('Error during forced initialization:', error);
+            // Show auth error container
+            const authErrorContainer = document.getElementById('auth-error-container');
+            if (authErrorContainer) {
+                authErrorContainer.style.display = 'block';
+                authErrorContainer.innerHTML = `
+                    <h2>Authentication Required</h2>
+                    <p>Please access this tool through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
+                `;
+            }
+            
+            // Keep main content hidden
+            document.getElementById('main-content').style.display = 'none';
+        };
+        
+        // Authentication timeout safety - in case verification gets stuck
+        setTimeout(function() {
+            const authLoading = document.getElementById('auth-loading');
+            const mainContent = document.getElementById('main-content');
+            
+            if (authLoading && authLoading.style.display !== 'none') {
+                console.log('Authentication verification timeout reached, forcing initialization');
+                
+                // Hide loading overlay
+                authLoading.style.display = 'none';
+                
+                // Show main content
+                if (mainContent) {
+                    mainContent.style.display = 'block';
+                }
+                
+                // Show warning message
+                const alertContainer = document.getElementById('error-alert-container');
+                if (alertContainer) {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <strong>Warning:</strong> Authentication verification timed out. Some features may be limited.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                }
+                
+                // Try to initialize application
+                if (typeof window.initializeMainApp === 'function') {
+                    try {
+                        window.initializeMainApp();
+                    } catch (error) {
+                        console.error('Error during forced initialization:', error);
+                    }
                 }
             }
-        }
-    }, 10000); // 10 second timeout
-</script>
+        }, 10000); // 10 second timeout
+    </script>
 
-<!-- Load Auth Verification script as regular script (not module) -->
-<script src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
+    <!-- Load Auth Verification script -->
+    <script src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
 </body>
 </html>
-            
