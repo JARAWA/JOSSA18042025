@@ -1,4 +1,11 @@
-// auth-verification.js - No module imports version
+// auth-verification.js
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -11,6 +18,10 @@ const firebaseConfig = {
     measurementId: "G-BPGP3TBN3N"
 };
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
 // Allowed origins
 const ALLOWED_ORIGINS = [
     'https://nextstep-nexn.onrender.com',
@@ -18,15 +29,13 @@ const ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000'
 ];
 
-// Auth Verification class
-class AuthVerification {
+export default class AuthVerification {
     static isVerified = false;
     static user = null;
     static initializationTimeout = 30000; // 30 seconds timeout
 
     static async init() {
         try {
-            console.log('Auth verification starting...');
             this.showLoadingState();
 
             // Development mode check
@@ -79,7 +88,6 @@ class AuthVerification {
     }
 
     static async initializeApplication() {
-        console.log('Initializing application...');
         if (!window.initializeApp) {
             console.warn('No initialization function found');
             return;
@@ -90,20 +98,16 @@ class AuthVerification {
                 reject(new Error('Application initialization timed out'));
             }, this.initializationTimeout);
 
-            try {
-                // Call the initialization function directly
-                window.initializeApp();
-                clearTimeout(timeout);
-                resolve();
-            } catch (error) {
-                clearTimeout(timeout);
-                reject(error);
-            }
+            Promise.resolve(window.initializeApp())
+                .then(() => {
+                    clearTimeout(timeout);
+                    resolve();
+                })
+                .catch(reject);
         });
 
         try {
             await initPromise;
-            console.log('Application initialized successfully');
             this.showAlert('Application initialized successfully', 'success');
         } catch (error) {
             console.error('Application initialization error:', error);
@@ -295,7 +299,6 @@ class AuthVerification {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, starting auth verification');
     AuthVerification.init().then(isVerified => {
         if (isVerified) {
             console.log('Authentication verified, application can continue');
@@ -310,25 +313,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export globally
 window.AuthVerification = AuthVerification;
-
-// Fallback timer for stuck authentication
-setTimeout(() => {
-    const authLoading = document.getElementById('auth-loading');
-    if (authLoading && getComputedStyle(authLoading).display !== 'none') {
-        console.log('Authentication verification timeout reached, forcing application initialization');
-        authLoading.style.display = 'none';
-        
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            mainContent.style.display = 'block';
-        }
-        
-        if (typeof window.initializeApp === 'function') {
-            try {
-                window.initializeApp();
-            } catch (error) {
-                console.error('Error during forced initialization:', error);
-            }
-        }
-    }
-}, 15000); // 15 second timeout
