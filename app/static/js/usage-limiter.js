@@ -47,7 +47,7 @@ try {
 
 export default class UsageLimiter {
     static DAILY_LIMIT = 5;
-    static UNLIMITED_EMAILS = ['49.jayesh@gmail.com'];
+    static UNLIMITED_EMAILS = ['49.jayesh@gmail.com','kapil.mems@gmail.com'];
     static DEBUG_MODE = true; // Set to true to enable more verbose logging
     
     /**
