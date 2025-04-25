@@ -168,7 +168,7 @@ async function initializeApp() {
 }
 
 // Function to display remaining uses
-async function displayRemainingUses() {
+window.displayRemainingUses = async function() {
     if (!UsageLimiter || !window.AuthVerification || !window.AuthVerification.isAuthenticated()) {
         return;
     }
@@ -349,31 +349,54 @@ function updateSortIndicators(activeColumnIndex, ascending) {
     });
 }
 
-// Modified Form Submission Handler to check usage limits
 async function handleFormSubmit(event) {
     event.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) return false;
     
-    // Check if the user has remaining uses before proceeding
-    if (UsageLimiter) {
-        try {
-            const usageResult = await UsageLimiter.checkAndUpdateUsage();
-            
-            if (!usageResult.allowed) {
-                showError(usageResult.message || 'You have reached the daily limit for generating preferences.');
-                return;
-            }
-            
-            // Show remaining uses notification if not unlimited
-            if (usageResult.remainingUses !== Infinity) {
-                // This will be handled by the UsageLimiter.applyToButton function
-            }
-        } catch (error) {
-            console.error('Error checking usage limits:', error);
-            // Continue with generation even if usage check fails
+    const formData = {
+        jee_rank: parseInt(document.getElementById('jee-rank').value),
+        category: document.getElementById('category').value,
+        college_type: document.getElementById('college-type').value,
+        preferred_branch: document.getElementById('preferred-branch').value,
+        round_no: document.getElementById('round-no').value,
+        quota: document.getElementById('quota').value,
+        gender: document.getElementById('gender').value,
+        min_probability: parseFloat(document.getElementById('min-prob').value)
+    };
+
+    try {
+        setLoadingState(true);
+        
+        const response = await fetch(`${API_URL}${ENDPOINTS.predict}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        handlePredictionResponse(data);
+        
+        // Update the usage count after successful generation
+        if (UsageLimiter) {
+            await UsageLimiter.checkAndUpdateUsage(true);
+            // Update the display
+            await displayRemainingUses();
         }
+        
+        return true; // Indicate success
+    } catch (error) {
+        showError('Failed to generate preferences. Please try again.');
+        console.error('Prediction error:', error);
+        return false; // Indicate failure
+    } finally {
+        setLoadingState(false);
     }
+}
     
     const formData = {
         jee_rank: parseInt(document.getElementById('jee-rank').value),
@@ -543,13 +566,13 @@ function setLoadingState(isLoading) {
     const downloadBtn = document.getElementById('download-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
     
-    // Check if elements exist before accessing them
+    // Check if generateBtn exists before proceeding
     if (!generateBtn) {
         console.warn('Generate button not found');
         return;
     }
     
-    // Add null checks for all DOM elements
+    // Add null checks for all elements
     const spinner = generateBtn.querySelector('.spinner-border');
     const buttonContent = generateBtn.querySelector('.button-content');
 
