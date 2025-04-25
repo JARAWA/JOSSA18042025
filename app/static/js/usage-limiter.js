@@ -1,9 +1,6 @@
 // usage-limiter.js
 
-import { initializeApp }
-
-// Export globally
-window.UsageLimiter = UsageLimiter; from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { 
     getFirestore,
     collection,
@@ -30,16 +27,13 @@ const firebaseConfig = {
     measurementId: "G-BPGP3TBN3N"
 };
 
-// Initialize Firebase if not already initialized
+// Initialize Firebase
 let app;
 try {
-    app = firebase.app();
-} catch (e) {
-    try {
-        app = initializeApp(firebaseConfig);
-    } catch (initError) {
-        console.error("Error initializing Firebase:", initError);
-    }
+    // Don't try to access global firebase - use the imported initializeApp instead
+    app = initializeApp(firebaseConfig);
+} catch (initError) {
+    console.error("Error initializing Firebase:", initError);
 }
 
 // Initialize Firestore and Auth
@@ -398,3 +392,6 @@ export default class UsageLimiter {
         }
     }
 }
+
+// Export globally
+window.UsageLimiter = UsageLimiter;
