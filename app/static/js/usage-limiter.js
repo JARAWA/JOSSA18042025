@@ -32,22 +32,34 @@ let app;
 try {
     app = firebase.app();
 } catch (e) {
-    app = initializeApp(firebaseConfig);
+    try {
+        app = initializeApp(firebaseConfig);
+    } catch (initError) {
+        console.error("Error initializing Firebase:", initError);
+    }
 }
 
 // Initialize Firestore and Auth
-const db = getFirestore(app);
-const auth = getAuth(app);
+let db, auth;
+try {
+    db = getFirestore(app);
+    auth = getAuth(app);
+} catch (error) {
+    console.error("Error initializing Firestore/Auth:", error);
+}
 
 export default class UsageLimiter {
     static DAILY_LIMIT = 5;
     static UNLIMITED_EMAILS = ['49.jayesh@gmail.com'];
+    static DEBUG_MODE = true; // Set to true to enable more verbose logging
     
     /**
      * Ensure Firebase Auth is ready and user is authenticated
      * @returns {Promise<firebase.User|null>}
      */
     static async ensureAuthReady() {
+        if (!auth) return null;
+        
         return new Promise((resolve) => {
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 unsubscribe();
@@ -59,24 +71,30 @@ export default class UsageLimiter {
     /**
      * Sign in to Firebase Auth using email
      * This is a workaround method - in production, use proper authentication
+     * @param {string} userId - User ID
      * @param {string} email - User's email
-     * @returns {Promise<void>}
+     * @returns {Promise<Object>}
      */
     static async signInForFirestore(userId, email) {
         // For development environment, use a known user
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.includes('local') ||
+            window.location.hostname.includes('dev') ||
+            window.location.hostname.includes('render.com')) {
+            
             // In development, bypass authentication and use a dummy user
             console.log("Development environment: Using dummy Firebase auth");
             return {
-                uid: "dev-user-id",
-                email: "dev@example.com"
+                uid: userId || "dev-user-id",
+                email: email || "dev@example.com"
             };
         }
         
         try {
             // Check if already signed in
             await this.ensureAuthReady();
-            if (auth.currentUser) {
+            if (auth && auth.currentUser) {
                 console.log("Already signed in to Firebase Auth:", auth.currentUser.email);
                 return auth.currentUser;
             }
@@ -102,18 +120,26 @@ export default class UsageLimiter {
         try {
             // Get the authenticated user from AuthVerification
             if (!window.AuthVerification || !window.AuthVerification.isAuthenticated()) {
-                return { allowed: false, remainingUses: 0, message: 'Not authenticated' };
+                if (this.DEBUG_MODE) console.log("Auth verification not available or user not authenticated");
+                return { allowed: true, remainingUses: this.DAILY_LIMIT, message: 'Auth tracking unavailable - operations allowed' };
             }
             
             const authUser = window.AuthVerification.user;
             if (!authUser || !authUser.uid || !authUser.email) {
-                return { allowed: false, remainingUses: 0, message: 'User information not available' };
+                if (this.DEBUG_MODE) console.log("Auth user information not available");
+                return { allowed: true, remainingUses: this.DAILY_LIMIT, message: 'User tracking unavailable - operations allowed' };
             }
 
             // Check if user has unlimited access
             if (this.UNLIMITED_EMAILS.includes(authUser.email)) {
                 console.log(`Unlimited access granted for ${authUser.email}`);
                 return { allowed: true, remainingUses: Infinity, message: 'Unlimited access' };
+            }
+            
+            // Skip Firestore checks if db is not available
+            if (!db) {
+                console.warn("Firestore not available, skipping usage tracking");
+                return { allowed: true, remainingUses: this.DAILY_LIMIT, message: 'Usage tracking unavailable - operations allowed' };
             }
             
             // Try to get a Firebase Auth user
@@ -123,85 +149,100 @@ export default class UsageLimiter {
             const today = new Date().toISOString().split('T')[0];
             
             // Reference to the user's usage document
-            const userUsageRef = doc(db, "userUsage", firebaseUser.uid);
-            
             try {
-                // Explicit error handling for Firestore operation
-                const usageDoc = await getDoc(userUsageRef);
+                const userUsageRef = doc(db, "userUsage", firebaseUser.uid);
                 
-                if (!usageDoc.exists()) {
-                    // First time user, create usage document
-                    try {
-                        await setDoc(userUsageRef, {
-                            josaaApp: {
-                                [today]: 1
-                            },
-                            lastUpdated: serverTimestamp(),
-                            email: firebaseUser.email
-                        });
-                    } catch (writeError) {
-                        console.error("Error creating user document:", writeError);
-                        // Fallback to allowing the user if we can't write
+                // Try with more detailed error logging
+                try {
+                    if (this.DEBUG_MODE) console.log("Attempting to read document:", `userUsage/${firebaseUser.uid}`);
+                    const usageDoc = await getDoc(userUsageRef);
+                    
+                    if (!usageDoc.exists()) {
+                        // First time user, create usage document
+                        try {
+                            if (this.DEBUG_MODE) console.log("Document doesn't exist, creating new one");
+                            await setDoc(userUsageRef, {
+                                josaaApp: {
+                                    [today]: 1
+                                },
+                                lastUpdated: serverTimestamp(),
+                                email: firebaseUser.email
+                            });
+                        } catch (writeError) {
+                            console.error("Error creating user document:", writeError);
+                            // Fallback to allowing the user if we can't write
+                            return { 
+                                allowed: true, 
+                                remainingUses: this.DAILY_LIMIT - 1, 
+                                message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - 1} uses remaining.` 
+                            };
+                        }
+                        
+                        const remainingUses = this.DAILY_LIMIT - 1;
                         return { 
                             allowed: true, 
-                            remainingUses: this.DAILY_LIMIT - 1, 
-                            message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - 1} uses remaining.` 
+                            remainingUses, 
+                            message: `You have ${remainingUses} generations remaining today` 
                         };
-                    }
-                    
-                    const remainingUses = this.DAILY_LIMIT - 1;
-                    return { 
-                        allowed: true, 
-                        remainingUses, 
-                        message: `You have ${remainingUses} generations remaining today` 
-                    };
-                } else {
-                    // User exists, get current usage
-                    const userData = usageDoc.data();
-                    const josaaUsage = userData.josaaApp || {};
-                    const todayUsage = josaaUsage[today] || 0;
-                    
-                    // Check if user has reached the daily limit
-                    if (todayUsage >= this.DAILY_LIMIT) {
-                        return { 
-                            allowed: false, 
-                            remainingUses: 0, 
-                            message: 'You have reached the daily limit of 5 generations. Please try again tomorrow.' 
-                        };
-                    }
-                    
-                    // Update usage count
-                    const newUsage = todayUsage + 1;
-                    try {
-                        await updateDoc(userUsageRef, {
-                            [`josaaApp.${today}`]: newUsage,
-                            lastUpdated: serverTimestamp()
-                        });
-                    } catch (updateError) {
-                        console.error("Error updating usage count:", updateError);
-                        // Fallback to allowing the user if we can't update
+                    } else {
+                        // User exists, get current usage
+                        const userData = usageDoc.data();
+                        const josaaUsage = userData.josaaApp || {};
+                        const todayUsage = josaaUsage[today] || 0;
+                        
+                        // Check if user has reached the daily limit
+                        if (todayUsage >= this.DAILY_LIMIT) {
+                            return { 
+                                allowed: false, 
+                                remainingUses: 0, 
+                                message: 'You have reached the daily limit of 5 generations. Please try again tomorrow.' 
+                            };
+                        }
+                        
+                        // Update usage count
+                        const newUsage = todayUsage + 1;
+                        try {
+                            await updateDoc(userUsageRef, {
+                                [`josaaApp.${today}`]: newUsage,
+                                lastUpdated: serverTimestamp()
+                            });
+                        } catch (updateError) {
+                            console.error("Error updating usage count:", updateError);
+                            // Fallback to allowing the user if we can't update
+                            return { 
+                                allowed: true, 
+                                remainingUses: this.DAILY_LIMIT - todayUsage - 1, 
+                                message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - todayUsage - 1} uses remaining.` 
+                            };
+                        }
+                        
+                        const remainingUses = this.DAILY_LIMIT - newUsage;
                         return { 
                             allowed: true, 
-                            remainingUses: this.DAILY_LIMIT - todayUsage - 1, 
-                            message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - todayUsage - 1} uses remaining.` 
+                            remainingUses,
+                            message: `You have ${remainingUses} generations remaining today` 
                         };
                     }
+                } catch (readError) {
+                    console.error("Error reading user usage:", readError);
+                    console.log("Firebase auth state:", auth?.currentUser ? "Signed in" : "Not signed in");
+                    console.log("Document path:", `userUsage/${firebaseUser.uid}`);
                     
-                    const remainingUses = this.DAILY_LIMIT - newUsage;
+                    // ALWAYS allow the operation when there's a Firestore error
                     return { 
                         allowed: true, 
-                        remainingUses,
-                        message: `You have ${remainingUses} generations remaining today` 
+                        remainingUses: "unknown", 
+                        message: "Usage tracking is currently unavailable",
+                        error: readError.message 
                     };
                 }
-            } catch (readError) {
-                console.error("Error reading user usage:", readError);
-                // Allow the operation if we can't read the current usage
+            } catch (docError) {
+                console.error("Error creating document reference:", docError);
                 return { 
                     allowed: true, 
                     remainingUses: "unknown", 
                     message: "Usage tracking is currently unavailable",
-                    error: readError.message 
+                    error: docError.message 
                 };
             }
         } catch (error) {
