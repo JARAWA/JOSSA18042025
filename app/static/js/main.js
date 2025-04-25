@@ -397,40 +397,6 @@ async function handleFormSubmit(event) {
         setLoadingState(false);
     }
 }
-    
-    const formData = {
-        jee_rank: parseInt(document.getElementById('jee-rank').value),
-        category: document.getElementById('category').value,
-        college_type: document.getElementById('college-type').value,
-        preferred_branch: document.getElementById('preferred-branch').value,
-        round_no: document.getElementById('round-no').value,
-        quota: document.getElementById('quota').value,
-        gender: document.getElementById('gender').value,
-        min_probability: parseFloat(document.getElementById('min-prob').value)
-    };
-
-    try {
-        setLoadingState(true);
-        
-        const response = await fetch(`${API_URL}${ENDPOINTS.predict}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        handlePredictionResponse(data);
-    } catch (error) {
-        showError('Failed to generate preferences. Please try again.');
-        console.error('Prediction error:', error);
-    } finally {
-        setLoadingState(false);
-    }
-}
 
 // Response Handler
 function handlePredictionResponse(data) {
