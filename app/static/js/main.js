@@ -10,6 +10,22 @@ const ENDPOINTS = {
     genders: '/api/genders'     // New endpoint for genders
 }
 
+// Import the usage limiter module
+let UsageLimiter;
+
+// Function to load the UsageLimiter module
+async function loadUsageLimiter() {
+    try {
+        const module = await import('./usage-limiter.js');
+        UsageLimiter = module.default;
+        console.log('Usage limiter module loaded successfully');
+        return true;
+    } catch (error) {
+        console.error('Failed to load usage limiter module:', error);
+        return false;
+    }
+}
+
 // Error Handling
 function showError(message) {
     const alertContainer = document.getElementById('error-alert-container');
@@ -122,20 +138,68 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTooltips();
 });
 
-// App Initialization
+// Modified initializeApp function to integrate usage limiter
 async function initializeApp() {
     try {
+        // Load usage limiter module
+        const limiterLoaded = await loadUsageLimiter();
+        
+        // Apply usage limiter to the generate button if loaded successfully
+        if (limiterLoaded && UsageLimiter) {
+            const generateButton = document.getElementById('generate-btn');
+            UsageLimiter.applyToButton(generateButton, null);
+            
+            // Display remaining uses counter
+            displayRemainingUses();
+        }
+        
         await Promise.all([
             populateDropdown('college-type', ENDPOINTS.collegeTypes),
             populateDropdown('category', ENDPOINTS.categories),
             populateDropdown('preferred-branch', ENDPOINTS.branches),
             populateDropdown('round-no', ENDPOINTS.rounds),
-            populateDropdown('quota', ENDPOINTS.quotas),       // New quota dropdown
-            populateDropdown('gender', ENDPOINTS.genders)      // New gender dropdown
+            populateDropdown('quota', ENDPOINTS.quotas),
+            populateDropdown('gender', ENDPOINTS.genders)
         ]);
     } catch (error) {
         showError('Failed to initialize application. Please refresh the page.');
         console.error('Initialization error:', error);
+    }
+}
+
+// Function to display remaining uses
+async function displayRemainingUses() {
+    if (!UsageLimiter || !window.AuthVerification || !window.AuthVerification.isAuthenticated()) {
+        return;
+    }
+    
+    try {
+        const remainingUses = await UsageLimiter.getRemainingUses();
+        
+        // Create or update the counter element
+        let counterElem = document.getElementById('remaining-uses-counter');
+        if (!counterElem) {
+            counterElem = document.createElement('div');
+            counterElem.id = 'remaining-uses-counter';
+            counterElem.className = 'text-muted small mt-2';
+            
+            // Add it near the generate button
+            const buttonRow = document.querySelector('.button-row');
+            if (buttonRow) {
+                buttonRow.appendChild(counterElem);
+            }
+        }
+        
+        // Update the text
+        if (remainingUses === Infinity) {
+            counterElem.textContent = 'You have unlimited preference generations';
+            counterElem.className = 'text-success small mt-2';
+        } else {
+            counterElem.textContent = `You have ${remainingUses} preference generations remaining today`;
+            counterElem.className = `text-${remainingUses > 2 ? 'muted' : 'warning'} small mt-2`;
+        }
+    } catch (error) {
+        console.error('Error displaying remaining uses:', error);
     }
 }
 
@@ -285,11 +349,31 @@ function updateSortIndicators(activeColumnIndex, ascending) {
     });
 }
 
-// Form Submission Handler
+// Modified Form Submission Handler to check usage limits
 async function handleFormSubmit(event) {
     event.preventDefault();
     
     if (!validateForm()) return;
+    
+    // Check if the user has remaining uses before proceeding
+    if (UsageLimiter) {
+        try {
+            const usageResult = await UsageLimiter.checkAndUpdateUsage();
+            
+            if (!usageResult.allowed) {
+                showError(usageResult.message || 'You have reached the daily limit for generating preferences.');
+                return;
+            }
+            
+            // Show remaining uses notification if not unlimited
+            if (usageResult.remainingUses !== Infinity) {
+                // This will be handled by the UsageLimiter.applyToButton function
+            }
+        } catch (error) {
+            console.error('Error checking usage limits:', error);
+            // Continue with generation even if usage check fails
+        }
+    }
     
     const formData = {
         jee_rank: parseInt(document.getElementById('jee-rank').value),
@@ -297,8 +381,8 @@ async function handleFormSubmit(event) {
         college_type: document.getElementById('college-type').value,
         preferred_branch: document.getElementById('preferred-branch').value,
         round_no: document.getElementById('round-no').value,
-        quota: document.getElementById('quota').value,         // New quota field
-        gender: document.getElementById('gender').value,       // New gender field
+        quota: document.getElementById('quota').value,
+        gender: document.getElementById('gender').value,
         min_probability: parseFloat(document.getElementById('min-prob').value)
     };
 
