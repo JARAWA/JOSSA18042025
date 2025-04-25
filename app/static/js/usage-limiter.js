@@ -52,12 +52,13 @@ export default class UsageLimiter {
             if (!user || !user.uid || !user.email) {
                 return { allowed: false, remainingUses: 0, message: 'User information not available' };
             }
-            
-            // Check if user has unlimited access
+
+            // Check if user has unlimited access - add console logging for debugging
             if (this.UNLIMITED_EMAILS.includes(user.email)) {
-                return { allowed: true, remainingUses: Infinity, message: 'Unlimited access' };
+            console.log(`Unlimited access granted for ${user.email}`);
+            return { allowed: true, remainingUses: Infinity, message: 'Unlimited access' };
             }
-            
+                        
             // Get current date in YYYY-MM-DD format (in user's timezone)
             const today = new Date().toISOString().split('T')[0];
             
@@ -137,33 +138,64 @@ export default class UsageLimiter {
         const originalClickHandler = buttonElement.onclick;
         
         // Replace with our handler
-        buttonElement.onclick = async function(event) {
-            event.preventDefault();
+buttonElement.onclick = async function(event) {
+    event.preventDefault();
+    
+    // Show loading state
+    const originalText = buttonElement.innerText;
+    buttonElement.innerText = "Checking limits...";
+    buttonElement.disabled = true;
+    
+    try {
+        const usageResult = await UsageLimiter.checkAndUpdateUsage();
+        console.log("Usage check result:", usageResult); // Add this for debugging
+        
+        // Reset button state
+        buttonElement.innerText = originalText;
+        buttonElement.disabled = false;
+        
+        if (usageResult.allowed) {
+            // Show remaining uses if not unlimited
+            if (usageResult.remainingUses !== Infinity) {
+                UsageLimiter.showNotification(usageResult.message, "info");
+            }
             
-            // Show loading state
-            const originalText = buttonElement.innerText;
-            buttonElement.innerText = "Checking limits...";
-            buttonElement.disabled = true;
-            
-            try {
-                const usageResult = await UsageLimiter.checkAndUpdateUsage();
-                
-                if (usageResult.allowed) {
-                    // Reset button state
-                    buttonElement.innerText = originalText;
-                    buttonElement.disabled = false;
-                    
-                    // Show remaining uses if not unlimited
-                    if (usageResult.remainingUses !== Infinity) {
-                        UsageLimiter.showNotification(usageResult.message, "info");
-                    }
-                    
-                    // Call the original function
-                    if (typeof generateFunction === 'function') {
-                        generateFunction();
-                    } else if (typeof originalClickHandler === 'function') {
-                        originalClickHandler.call(buttonElement, event);
-                    }
+            // Call the original form submit handler directly
+            if (typeof generateFunction === 'function') {
+                generateFunction();
+            } else {
+                // Submit the form directly if no function was provided
+                const form = buttonElement.closest('form');
+                if (form) {
+                    const formSubmitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    form.dispatchEvent(formSubmitEvent);
+                } else if (typeof originalClickHandler === 'function') {
+                    originalClickHandler.call(buttonElement, event);
+                }
+            }
+        } else {
+            // Show limit reached message
+            UsageLimiter.showNotification(usageResult.message, "warning");
+        }
+    } catch (error) {
+        console.error("Error in usage limiter:", error);
+        buttonElement.innerText = originalText;
+        buttonElement.disabled = false;
+        
+        // On error, still allow the action to proceed
+        if (typeof generateFunction === 'function') {
+            generateFunction();
+        } else {
+            const form = buttonElement.closest('form');
+            if (form) {
+                const formSubmitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                form.dispatchEvent(formSubmitEvent);
+            } else if (typeof originalClickHandler === 'function') {
+                originalClickHandler.call(buttonElement, event);
+            }
+        }
+    }
+};
                 } else {
                     // Show limit reached message
                     buttonElement.innerText = "Limit Reached";
