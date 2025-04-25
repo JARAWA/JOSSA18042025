@@ -1,6 +1,9 @@
 // usage-limiter.js
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { initializeApp }
+
+// Export globally
+window.UsageLimiter = UsageLimiter; from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { 
     getFirestore,
     collection,
@@ -158,89 +161,89 @@ export default class UsageLimiter {
                     const usageDoc = await getDoc(userUsageRef);
                     
                     if (!usageDoc.exists()) {
-    // First time user, create usage document
-    if (updateCount) {
-        try {
-            await setDoc(userUsageRef, {
-                josaaApp: {
-                    [today]: 1
-                },
-                lastUpdated: serverTimestamp(),
-                email: firebaseUser.email
-            });
-        } catch (writeError) {
-            console.error("Error creating user document:", writeError);
-            // Fallback to allowing the user if we can't write
-            return { 
-                allowed: true, 
-                remainingUses: this.DAILY_LIMIT - 1, 
-                message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - 1} uses remaining.` 
-            };
-        }
-        
-        const remainingUses = this.DAILY_LIMIT - 1;
-        return { 
-            allowed: true, 
-            remainingUses, 
-            message: `You have ${remainingUses} generations remaining today` 
-        };
-    } else {
-        // Just checking, don't update
-        return { 
-            allowed: true, 
-            remainingUses: this.DAILY_LIMIT, 
-            message: `You have ${this.DAILY_LIMIT} generations remaining today` 
-        };
-    }
-}
+                        // First time user, create usage document
+                        if (updateCount) {
+                            try {
+                                await setDoc(userUsageRef, {
+                                    josaaApp: {
+                                        [today]: 1
+                                    },
+                                    lastUpdated: serverTimestamp(),
+                                    email: firebaseUser.email
+                                });
+                            } catch (writeError) {
+                                console.error("Error creating user document:", writeError);
+                                // Fallback to allowing the user if we can't write
+                                return { 
+                                    allowed: true, 
+                                    remainingUses: this.DAILY_LIMIT - 1, 
+                                    message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - 1} uses remaining.` 
+                                };
+                            }
+                            
+                            const remainingUses = this.DAILY_LIMIT - 1;
+                            return { 
+                                allowed: true, 
+                                remainingUses, 
+                                message: `You have ${remainingUses} generations remaining today` 
+                            };
+                        } else {
+                            // Just checking, don't update
+                            return { 
+                                allowed: true, 
+                                remainingUses: this.DAILY_LIMIT, 
+                                message: `You have ${this.DAILY_LIMIT} generations remaining today` 
+                            };
+                        }
                     } else {
-// User exists, get current usage
-const userData = usageDoc.data();
-const josaaUsage = userData.josaaApp || {};
-const todayUsage = josaaUsage[today] || 0;
+                        // User exists, get current usage
+                        const userData = usageDoc.data();
+                        const josaaUsage = userData.josaaApp || {};
+                        const todayUsage = josaaUsage[today] || 0;
 
-// Check if user has reached the daily limit
-if (todayUsage >= this.DAILY_LIMIT) {
-    return { 
-        allowed: false, 
-        remainingUses: 0, 
-        message: 'You have reached the daily limit of 5 generations. Please try again tomorrow.' 
-    };
-}
+                        // Check if user has reached the daily limit
+                        if (todayUsage >= this.DAILY_LIMIT) {
+                            return { 
+                                allowed: false, 
+                                remainingUses: 0, 
+                                message: 'You have reached the daily limit of 5 generations. Please try again tomorrow.' 
+                            };
+                        }
 
-// Update usage count only if updateCount is true
-if (updateCount) {
-    const newUsage = todayUsage + 1;
-    try {
-        await updateDoc(userUsageRef, {
-            [`josaaApp.${today}`]: newUsage,
-            lastUpdated: serverTimestamp()
-        });
-    } catch (updateError) {
-        console.error("Error updating usage count:", updateError);
-        // Fallback to allowing the user if we can't update
-        return { 
-            allowed: true, 
-            remainingUses: this.DAILY_LIMIT - todayUsage - 1, 
-            message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - todayUsage - 1} uses remaining.` 
-        };
-    }
-    
-    const remainingUses = this.DAILY_LIMIT - newUsage;
-    return { 
-        allowed: true, 
-        remainingUses,
-        message: `You have ${remainingUses} generations remaining today` 
-    };
-} else {
-    // Just checking, don't update
-    const remainingUses = this.DAILY_LIMIT - todayUsage;
-    return { 
-        allowed: true, 
-        remainingUses,
-        message: `You have ${remainingUses} generations remaining today` 
-    };
-}
+                        // Update usage count only if updateCount is true
+                        if (updateCount) {
+                            const newUsage = todayUsage + 1;
+                            try {
+                                await updateDoc(userUsageRef, {
+                                    [`josaaApp.${today}`]: newUsage,
+                                    lastUpdated: serverTimestamp()
+                                });
+                            } catch (updateError) {
+                                console.error("Error updating usage count:", updateError);
+                                // Fallback to allowing the user if we can't update
+                                return { 
+                                    allowed: true, 
+                                    remainingUses: this.DAILY_LIMIT - todayUsage - 1, 
+                                    message: `Tracking unavailable. Assuming ${this.DAILY_LIMIT - todayUsage - 1} uses remaining.` 
+                                };
+                            }
+                            
+                            const remainingUses = this.DAILY_LIMIT - newUsage;
+                            return { 
+                                allowed: true, 
+                                remainingUses,
+                                message: `You have ${remainingUses} generations remaining today` 
+                            };
+                        } else {
+                            // Just checking, don't update
+                            const remainingUses = this.DAILY_LIMIT - todayUsage;
+                            return { 
+                                allowed: true, 
+                                remainingUses,
+                                message: `You have ${remainingUses} generations remaining today` 
+                            };
+                        }
+                    }
                 } catch (readError) {
                     console.error("Error reading user usage:", readError);
                     console.log("Firebase auth state:", auth?.currentUser ? "Signed in" : "Not signed in");
@@ -280,99 +283,66 @@ if (updateCount) {
      * @param {HTMLElement} buttonElement - The button to limit
      * @param {Function} generateFunction - The function to call when generation is allowed
      */
-static applyToButton(buttonElement, generateFunction) {
-    if (!buttonElement) {
-        console.error("Button element not found");
-        return;
-    }
-    
-    // Store the original click handler if any
-    const originalClickHandler = buttonElement.onclick;
-    
-    // Replace with our handler
-    buttonElement.onclick = async function(event) {
-        event.preventDefault();
+    static applyToButton(buttonElement, generateFunction) {
+        if (!buttonElement) {
+            console.error("Button element not found");
+            return;
+        }
         
-        // Show loading state
-        const originalText = buttonElement.innerText;
-        buttonElement.innerText = "Checking limits...";
-        buttonElement.disabled = true;
+        // Store the original click handler if any
+        const originalClickHandler = buttonElement.onclick;
         
-        try {
-            // First check WITHOUT updating the count
-            const checkResult = await UsageLimiter.checkAndUpdateUsage(false);
-            console.log("Usage check result:", checkResult);
+        // Replace with our handler
+        buttonElement.onclick = async function(event) {
+            event.preventDefault();
             
-            // Reset button state
-            buttonElement.innerText = originalText;
-            buttonElement.disabled = false;
+            // Show loading state
+            const originalText = buttonElement.innerText;
+            buttonElement.innerText = "Checking limits...";
+            buttonElement.disabled = true;
             
-            if (checkResult.allowed) {
-                // Show remaining uses if not unlimited
-                if (checkResult.remainingUses !== Infinity) {
-                    UsageLimiter.showNotification(checkResult.message, "info");
-                }
+            try {
+                // First check WITHOUT updating the count
+                const checkResult = await UsageLimiter.checkAndUpdateUsage(false);
+                console.log("Usage check result:", checkResult);
                 
-                // Call the original form submit handler directly
-                if (typeof generateFunction === 'function') {
-                    const success = await generateFunction();
-                    // Update count only if generation was successful
-                    if (success !== false) {
-                        await UsageLimiter.checkAndUpdateUsage(true);
-                        // Refresh the counter display if function exists
-                        if (typeof window.displayRemainingUses === 'function') {
-                            window.displayRemainingUses();
+                // Reset button state
+                buttonElement.innerText = originalText;
+                buttonElement.disabled = false;
+                
+                if (checkResult.allowed) {
+                    // Show remaining uses if not unlimited
+                    if (checkResult.remainingUses !== Infinity) {
+                        UsageLimiter.showNotification(checkResult.message, "info");
+                    }
+                    
+                    // Call the original form submit handler directly
+                    if (typeof generateFunction === 'function') {
+                        const success = await generateFunction();
+                        // Update count only if generation was successful
+                        if (success !== false) {
+                            await UsageLimiter.checkAndUpdateUsage(true);
+                            // Refresh the counter display if function exists
+                            if (typeof window.displayRemainingUses === 'function') {
+                                window.displayRemainingUses();
+                            }
+                        }
+                    } else {
+                        // Submit the form directly if no function was provided
+                        const form = buttonElement.closest('form');
+                        if (form) {
+                            const formSubmitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                            form.dispatchEvent(formSubmitEvent);
+                            // Form handling will update the usage count if successful
+                        } else if (typeof originalClickHandler === 'function') {
+                            originalClickHandler.call(buttonElement, event);
                         }
                     }
-                } else {
-                    // Submit the form directly if no function was provided
-                    const form = buttonElement.closest('form');
-                    if (form) {
-                        const formSubmitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                        form.dispatchEvent(formSubmitEvent);
-                        // Form handling will update the usage count if successful
-                    } else if (typeof originalClickHandler === 'function') {
-                        originalClickHandler.call(buttonElement, event);
-                    }
-                }
-            } else {
-                // Show limit reached message
-                buttonElement.innerText = "Limit Reached";
-                buttonElement.disabled = true;
-                UsageLimiter.showNotification(checkResult.message, "warning");
-                
-                // Reset button after 3 seconds
-                setTimeout(() => {
-                    buttonElement.innerText = originalText;
-                    buttonElement.disabled = false;
-                }, 3000);
-            }
-        } catch (error) {
-            console.error("Error in usage limiter:", error);
-            buttonElement.innerText = originalText;
-            buttonElement.disabled = false;
-            UsageLimiter.showNotification("An error occurred while checking usage limits", "error");
-            
-            // On error, still allow the action to proceed
-            if (typeof generateFunction === 'function') {
-                generateFunction();
-            } else {
-                const form = buttonElement.closest('form');
-                if (form) {
-                    const formSubmitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                    form.dispatchEvent(formSubmitEvent);
-                } else if (typeof originalClickHandler === 'function') {
-                    originalClickHandler.call(buttonElement, event);
-                }
-            }
-        }
-    };
-}
                 } else {
                     // Show limit reached message
                     buttonElement.innerText = "Limit Reached";
                     buttonElement.disabled = true;
-                    UsageLimiter.showNotification(usageResult.message, "warning");
+                    UsageLimiter.showNotification(checkResult.message, "warning");
                     
                     // Reset button after 3 seconds
                     setTimeout(() => {
@@ -407,9 +377,9 @@ static applyToButton(buttonElement, generateFunction) {
      * @returns {Promise<number>} Number of remaining uses
      */
     static async getRemainingUses() {
-    const result = await this.checkAndUpdateUsage(false); // Pass false to prevent updating
-    return result.remainingUses;
-}
+        const result = await this.checkAndUpdateUsage(false); // Pass false to prevent updating
+        return result.remainingUses;
+    }
     
     /**
      * Display a notification to the user
@@ -428,6 +398,3 @@ static applyToButton(buttonElement, generateFunction) {
         }
     }
 }
-
-// Export globally
-window.UsageLimiter = UsageLimiter;
