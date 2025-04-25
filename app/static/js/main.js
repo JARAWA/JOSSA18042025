@@ -542,19 +542,37 @@ function setLoadingState(isLoading) {
     const generateBtn = document.getElementById('generate-btn');
     const downloadBtn = document.getElementById('download-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
+    
+    // Check if elements exist before accessing them
+    if (!generateBtn) {
+        console.warn('Generate button not found');
+        return;
+    }
+    
+    // Add null checks for all DOM elements
     const spinner = generateBtn.querySelector('.spinner-border');
     const buttonContent = generateBtn.querySelector('.button-content');
 
     if (isLoading) {
-        generateBtn.disabled = true;
-        downloadBtn.disabled = true;
-        loadingOverlay.classList.remove('d-none');
-        spinner.classList.remove('d-none');
-        buttonContent.classList.add('d-none');
+        // Disable buttons
+        if (generateBtn) generateBtn.disabled = true;
+        if (downloadBtn) downloadBtn.disabled = true;
+        
+        // Show loading overlay
+        if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+        
+        // Update button UI
+        if (spinner) spinner.classList.remove('d-none');
+        if (buttonContent) buttonContent.classList.add('d-none');
     } else {
-        generateBtn.disabled = false;
-        loadingOverlay.classList.add('d-none');
-        spinner.classList.add('d-none');
-        buttonContent.classList.remove('d-none');
+        // Re-enable buttons
+        if (generateBtn) generateBtn.disabled = false;
+        
+        // Hide loading overlay
+        if (loadingOverlay) loadingOverlay.classList.add('d-none');
+        
+        // Restore button UI
+        if (spinner) spinner.classList.add('d-none');
+        if (buttonContent) buttonContent.classList.remove('d-none');
     }
 }
