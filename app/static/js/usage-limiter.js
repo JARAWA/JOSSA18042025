@@ -27,22 +27,24 @@ const firebaseConfig = {
     measurementId: "G-BPGP3TBN3N"
 };
 
-// Initialize Firebase
-let app;
-try {
-    // Don't try to access global firebase - use the imported initializeApp instead
-    app = initializeApp(firebaseConfig);
-} catch (initError) {
-    console.error("Error initializing Firebase:", initError);
-}
+// Check if we're in development environment
+const isDevelopment = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname.includes('local') ||
+                      window.location.hostname.includes('dev') ||
+                      window.location.hostname.includes('render.com');
 
-// Initialize Firestore and Auth
-let db, auth;
-try {
-    db = getFirestore(app);
-    auth = getAuth(app);
-} catch (error) {
-    console.error("Error initializing Firestore/Auth:", error);
+// Initialize Firebase only in production environment
+let app, db, auth;
+if (!isDevelopment) {
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        console.log("Firebase initialized in production mode");
+    } catch (error) {
+        console.error("Error initializing Firebase:", error);
+    }
 }
 
 export default class UsageLimiter {
@@ -74,13 +76,7 @@ export default class UsageLimiter {
      */
     static async signInForFirestore(userId, email) {
         // For development environment, use a known user
-        if (window.location.hostname === 'localhost' || 
-            window.location.hostname === '127.0.0.1' ||
-            window.location.hostname.includes('local') ||
-            window.location.hostname.includes('dev') ||
-            window.location.hostname.includes('render.com')) {
-            
-            // In development, bypass authentication and use a dummy user
+        if (isDevelopment) {
             console.log("Development environment: Using dummy Firebase auth");
             return {
                 uid: userId || "dev-user-id",
@@ -115,6 +111,26 @@ export default class UsageLimiter {
      */
     static async checkAndUpdateUsage(updateCount = false) {
         try {
+            // In development mode, always allow with a simulated count
+            if (isDevelopment) {
+                if (this.DEBUG_MODE) console.log("Development environment: Bypassing usage tracking");
+                // Simulate usage tracking in development
+                const devUsage = sessionStorage.getItem('devUsageCount') || 0;
+                let newUsage = parseInt(devUsage);
+                
+                if (updateCount) {
+                    newUsage += 1;
+                    sessionStorage.setItem('devUsageCount', newUsage);
+                }
+                
+                const remainingUses = this.DAILY_LIMIT - newUsage;
+                return { 
+                    allowed: remainingUses > 0, 
+                    remainingUses: Math.max(0, remainingUses), 
+                    message: `DEV MODE: You have ${Math.max(0, remainingUses)} generations remaining today` 
+                };
+            }
+            
             // Get the authenticated user from AuthVerification
             if (!window.AuthVerification || !window.AuthVerification.isAuthenticated()) {
                 if (this.DEBUG_MODE) console.log("Auth verification not available or user not authenticated");
