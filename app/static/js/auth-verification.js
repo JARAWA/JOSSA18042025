@@ -25,6 +25,7 @@ const auth = getAuth(app);
 // Allowed origins
 const ALLOWED_ORIGINS = [
     'https://nextstep-nexn.onrender.com',
+    'https://nextstep-test.onrender.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000'
 ];
