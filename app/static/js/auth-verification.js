@@ -24,7 +24,7 @@ const auth = getAuth(app);
 
 // Allowed origins
 const ALLOWED_ORIGINS = [
-    'https://nextstep-nexn.onrender.com',
+    'https://nextstepedu.co.in',
     'https://nextstep-test.onrender.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000'
@@ -119,13 +119,13 @@ export default class AuthVerification {
 
     static verifyReferrer(referrerOrigin, source) {
         // For direct access without a referrer but with valid token and source
-        if (!referrerOrigin && source === 'nextstep-nexn') {
+        if (!referrerOrigin && source === 'nextstepedu') {
             return true;
         }
         
         return (
             ALLOWED_ORIGINS.includes(referrerOrigin) || 
-            source === 'nextstep-nexn'
+            source === 'nextstepedu'
         );
     }
 
@@ -172,7 +172,7 @@ export default class AuthVerification {
         errorContainer.innerHTML = `
             <h2>Access Denied</h2>
             <p>${message}</p>
-            <p>Please access this application through the <a href="https://nextstep-nexn.onrender.com">NextStep</a> website.</p>
+            <p>Please access this application through the <a href="https://nextstepedu.co.in">NextStep</a> website.</p>
         `;
         
         this.showAlert(message, 'danger');
