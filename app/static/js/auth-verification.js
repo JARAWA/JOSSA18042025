@@ -48,6 +48,15 @@ export default class AuthVerification {
                 return true;
             }
 
+                    // ADD DEBUGGING CODE HERE, RIGHT AFTER THE DEVELOPMENT MODE CHECK
+        console.log("Full URL:", window.location.href);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log("All URL params:", Array.from(urlParams.entries()));
+        console.log("Session storage token:", sessionStorage.getItem('josaa_auth_token'));
+        console.log("Local storage auth token:", localStorage.getItem('authToken'));
+        // END OF ADDED DEBUGGING CODE
+            
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
             const source = urlParams.get('source');
