@@ -13,6 +13,31 @@ F<!DOCTYPE html>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', path='/css/main.css') }}" rel="stylesheet">
+
+    <!-- Hash Tracker for Debugging -->
+<script src="{{ url_for('static', path='/js/hash-tracker.js') }}" defer></script>
+<!-- Capture initial state immediately -->
+<script>
+(function captureInitialState() {
+    window._initialHash = window.location.hash;
+    window._initialUrl = window.location.href;
+    window._pageLoadTime = Date.now();
+    console.log('📍 Initial state captured:', { 
+        hash: window._initialHash,
+        url: window._initialUrl,
+        time: new Date(_pageLoadTime).toISOString()
+    });
+    
+    // Store in sessionStorage for persistence across page reloads
+    try {
+        sessionStorage.setItem('initial_hash', window._initialHash);
+        sessionStorage.setItem('initial_url', window._initialUrl);
+        sessionStorage.setItem('page_load_time', window._pageLoadTime);
+    } catch(e) {
+        console.error('Error storing initial state:', e);
+    }
+})();
+</script>
     
     <!-- Preload critical resources -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
