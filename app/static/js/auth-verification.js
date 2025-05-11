@@ -35,85 +35,140 @@ export default class AuthVerification {
     static user = null;
     static initializationTimeout = 30000; // 30 seconds timeout
 
-static async init() {
-    try {
-        this.showLoadingState();
+    static async init() {
+        try {
+            this.showLoadingState();
 
-        // Development mode check
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('Development mode: Bypassing authentication');
-            this.isVerified = true;
-            this.user = { email: 'dev@example.com' };
-            await this.initializeApplication();
-            return true;
-        }
-
-        console.log("Full URL:", window.location.href);
-
-        // Extract auth data from hash fragment
-        let token = null;
-        let source = null;
-        let uid = null;
-        
-        if (window.location.hash) {
-            try {
-                const hashData = JSON.parse(atob(window.location.hash.substring(1)));
-                token = hashData.token;
-                source = hashData.source;
-                uid = hashData.uid;
-                console.log("Found auth data in hash fragment:", { hasToken: !!token, source });
-            } catch (e) {
-                console.error("Error parsing hash fragment:", e);
+            // Development mode check
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('Development mode: Bypassing authentication');
+                this.isVerified = true;
+                this.user = { email: 'dev@example.com' };
+                await this.initializeApplication();
+                return true;
             }
-        }
-        
-        // Fallback to URL params and session storage if hash fragment method fails
-        if (!token) {
-            const urlParams = new URLSearchParams(window.location.search);
-            token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
-            source = urlParams.get('source');
-            uid = urlParams.get('uid');
-        }
 
-        const referrer = document.referrer;
-        const referrerOrigin = referrer ? new URL(referrer).origin : null;
+            // Debug logging for URL and hash
+            console.log("Full URL:", window.location.href);
+            console.log("URL Hash:", window.location.hash);
+            console.log("Session Storage:", {
+                token: sessionStorage.getItem('josaa_auth_token') ? 'present (length: ' + sessionStorage.getItem('josaa_auth_token').length + ')' : 'not found',
+                authVerified: localStorage.getItem('authVerified'),
+                authToken: localStorage.getItem('authToken') ? 'present' : 'not found'
+            });
+            
+            // Extract auth data from hash fragment
+            let token = null;
+            let source = null;
+            let uid = null;
+            
+            // Check if hash exists and try to parse it
+            if (window.location.hash && window.location.hash.length > 1) {
+                try {
+                    // Remove the # and parse the base64 encoded JSON
+                    const hashData = JSON.parse(atob(window.location.hash.substring(1)));
+                    console.log("Hash data found:", Object.keys(hashData));
+                    
+                    token = hashData.token;
+                    source = hashData.source;
+                    uid = hashData.uid;
+                    
+                    console.log("Extracted from hash:", { 
+                        hasToken: !!token, 
+                        tokenLength: token ? token.length : 0,
+                        source,
+                        uid
+                    });
+                    
+                    // Store in session storage as backup
+                    if (token) {
+                        sessionStorage.setItem('josaa_auth_token', token);
+                        console.log("Stored token from hash in sessionStorage");
+                    }
+                } catch (e) {
+                    console.error("Error parsing hash fragment:", e);
+                }
+            }
+            
+            // Fallback to URL params and session storage if hash fragment method fails
+            if (!token) {
+                const urlParams = new URLSearchParams(window.location.search);
+                token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
+                source = urlParams.get('source') || 'nextstepedu'; // Default source if not found
+                uid = urlParams.get('uid');
+                console.log("Fallback auth check:", { hasToken: !!token, source, hasUid: !!uid });
+            }
 
-        console.log('Init started:', { source, referrerOrigin, hasToken: !!token, hasUid: !!uid });
+            const referrer = document.referrer;
+            const referrerOrigin = referrer ? new URL(referrer).origin : null;
 
-        if (!this.verifyReferrer(referrerOrigin, source)) {
-            console.log('Referrer verification failed');
-            this.handleUnauthorizedAccess("Invalid referrer or source");
+            console.log('Init started:', { source, referrerOrigin, hasToken: !!token, hasUid: !!uid });
+
+            // More lenient referrer check if we have a valid token from hash
+            if (!this.verifyReferrer(referrerOrigin, source)) {
+                console.log('Referrer verification failed, checking alternate conditions');
+                
+                // If we have a token from hash fragment, we can be more lenient with referrer
+                if (token && window.location.hash) {
+                    console.log('Token found in hash fragment, bypassing strict referrer check');
+                } else {
+                    console.log('No token in hash and referrer check failed');
+                    this.handleUnauthorizedAccess("Invalid referrer or source");
+                    return false;
+                }
+            }
+
+            if (!token) {
+                console.log('No token found in any source');
+                this.handleUnauthorizedAccess("No authentication token provided");
+                return false;
+            }
+
+            // Check cookies as well
+            const cookies = this.parseCookies();
+            console.log("Cookies:", Object.keys(cookies));
+
+            try {
+                await this.verifyToken(token, uid);
+                this.isVerified = true;
+                localStorage.setItem('authVerified', 'true');
+                localStorage.setItem('authToken', token);
+                
+                // Clear hash to avoid keeping the token in the URL after authentication
+                if (window.location.hash) {
+                    history.replaceState(null, document.title, window.location.pathname + window.location.search);
+                    console.log("Cleared hash fragment for security");
+                }
+
+                this.showAlert('Authentication successful', 'success');
+                await this.initializeApplication();
+                return true;
+            } catch (tokenError) {
+                console.error("Token verification failed:", tokenError);
+                this.handleUnauthorizedAccess("Authentication token validation failed: " + tokenError.message);
+                return false;
+            }
+
+        } catch (error) {
+            console.error('Authentication initialization error:', error);
+            this.handleUnauthorizedAccess(error.message);
             return false;
+        } finally {
+            this.removeLoadingState();
         }
-
-        if (!token) {
-            console.log('No token found');
-            this.handleUnauthorizedAccess("No authentication token provided");
-            return false;
-        }
-
-        await this.verifyToken(token, uid);
-        this.isVerified = true;
-        localStorage.setItem('authVerified', 'true');
-        localStorage.setItem('authToken', token);
-        
-        // Clear hash to avoid keeping the token in the URL
-        if (window.location.hash) {
-            history.replaceState(null, document.title, window.location.pathname + window.location.search);
-        }
-
-        this.showAlert('Authentication successful', 'success');
-        await this.initializeApplication();
-        return true;
-
-    } catch (error) {
-        console.error('Authentication initialization error:', error);
-        this.handleUnauthorizedAccess(error.message);
-        return false;
-    } finally {
-        this.removeLoadingState();
     }
-}
+
+    static parseCookies() {
+        return document.cookie
+            .split(';')
+            .map(cookie => cookie.trim())
+            .filter(cookie => cookie.length > 0)
+            .reduce((obj, cookieStr) => {
+                const [key, value] = cookieStr.split('=');
+                obj[key] = value;
+                return obj;
+            }, {});
+    }
 
     static async initializeApplication() {
         if (!window.initializeApp) {
@@ -168,6 +223,11 @@ static async init() {
             }
             
             const payload = JSON.parse(atob(parts[1]));
+            console.log("Token payload:", { 
+                sub: payload.sub ? 'present' : 'missing',
+                user_id: payload.user_id ? 'present' : 'missing', 
+                exp: new Date(payload.exp * 1000).toLocaleString()
+            });
             
             const expiry = payload.exp * 1000; // Convert to milliseconds
             if (Date.now() >= expiry) {
@@ -175,7 +235,12 @@ static async init() {
             }
             
             if (uid && payload.user_id !== uid && payload.sub !== uid) {
-                throw new Error('Token does not match provided UID');
+                console.warn('UID mismatch:', { 
+                    providedUid: uid, 
+                    tokenUserId: payload.user_id, 
+                    tokenSub: payload.sub 
+                });
+                // Still proceed, but log the issue
             }
             
             this.user = {
@@ -200,6 +265,11 @@ static async init() {
             <h2>Access Denied</h2>
             <p>${message}</p>
             <p>Please access this application through the <a href="https://nextstepedu.co.in">NextStep</a> website.</p>
+            <div class="mt-3">
+                <button class="btn btn-primary" onclick="window.location.href='https://nextstepedu.co.in'">
+                    Go to NextStep
+                </button>
+            </div>
         `;
         
         this.showAlert(message, 'danger');
@@ -218,6 +288,9 @@ static async init() {
         container.style.borderRadius = '8px';
         container.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
         container.style.zIndex = '1001';
+        container.style.maxWidth = '90%';
+        container.style.width = '400px';
+        container.style.textAlign = 'center';
         document.body.appendChild(container);
         return container;
     }
