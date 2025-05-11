@@ -35,67 +35,85 @@ export default class AuthVerification {
     static user = null;
     static initializationTimeout = 30000; // 30 seconds timeout
 
-    static async init() {
-        try {
-            this.showLoadingState();
+static async init() {
+    try {
+        this.showLoadingState();
 
-            // Development mode check
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('Development mode: Bypassing authentication');
-                this.isVerified = true;
-                this.user = { email: 'dev@example.com' };
-                await this.initializeApplication();
-                return true;
-            }
-
-                    // ADD DEBUGGING CODE HERE, RIGHT AFTER THE DEVELOPMENT MODE CHECK
-        console.log("Full URL:", window.location.href);
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        console.log("All URL params:", Array.from(urlParams.entries()));
-        console.log("Session storage token:", sessionStorage.getItem('josaa_auth_token'));
-        console.log("Local storage auth token:", localStorage.getItem('authToken'));
-        // END OF ADDED DEBUGGING CODE
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
-            const source = urlParams.get('source');
-            const uid = urlParams.get('uid');
-            const referrer = document.referrer;
-            const referrerOrigin = referrer ? new URL(referrer).origin : null;
-
-            console.log('Init started:', { source, referrerOrigin, hasToken: !!token, hasUid: !!uid });
-
-            if (!this.verifyReferrer(referrerOrigin, source)) {
-                console.log('Referrer verification failed');
-                this.handleUnauthorizedAccess("Invalid referrer or source");
-                return false;
-            }
-
-            if (!token) {
-                console.log('No token found');
-                this.handleUnauthorizedAccess("No authentication token provided");
-                return false;
-            }
-
-            await this.verifyToken(token, uid);
+        // Development mode check
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('Development mode: Bypassing authentication');
             this.isVerified = true;
-            localStorage.setItem('authVerified', 'true');
-            localStorage.setItem('authToken', token);
-            sessionStorage.removeItem('josaa_auth_token');
-
-            this.showAlert('Authentication successful', 'success');
+            this.user = { email: 'dev@example.com' };
             await this.initializeApplication();
             return true;
-
-        } catch (error) {
-            console.error('Authentication initialization error:', error);
-            this.handleUnauthorizedAccess(error.message);
-            return false;
-        } finally {
-            this.removeLoadingState();
         }
+
+        console.log("Full URL:", window.location.href);
+
+        // Extract auth data from hash fragment
+        let token = null;
+        let source = null;
+        let uid = null;
+        
+        if (window.location.hash) {
+            try {
+                const hashData = JSON.parse(atob(window.location.hash.substring(1)));
+                token = hashData.token;
+                source = hashData.source;
+                uid = hashData.uid;
+                console.log("Found auth data in hash fragment:", { hasToken: !!token, source });
+            } catch (e) {
+                console.error("Error parsing hash fragment:", e);
+            }
+        }
+        
+        // Fallback to URL params and session storage if hash fragment method fails
+        if (!token) {
+            const urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('token') || sessionStorage.getItem('josaa_auth_token');
+            source = urlParams.get('source');
+            uid = urlParams.get('uid');
+        }
+
+        const referrer = document.referrer;
+        const referrerOrigin = referrer ? new URL(referrer).origin : null;
+
+        console.log('Init started:', { source, referrerOrigin, hasToken: !!token, hasUid: !!uid });
+
+        if (!this.verifyReferrer(referrerOrigin, source)) {
+            console.log('Referrer verification failed');
+            this.handleUnauthorizedAccess("Invalid referrer or source");
+            return false;
+        }
+
+        if (!token) {
+            console.log('No token found');
+            this.handleUnauthorizedAccess("No authentication token provided");
+            return false;
+        }
+
+        await this.verifyToken(token, uid);
+        this.isVerified = true;
+        localStorage.setItem('authVerified', 'true');
+        localStorage.setItem('authToken', token);
+        
+        // Clear hash to avoid keeping the token in the URL
+        if (window.location.hash) {
+            history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+
+        this.showAlert('Authentication successful', 'success');
+        await this.initializeApplication();
+        return true;
+
+    } catch (error) {
+        console.error('Authentication initialization error:', error);
+        this.handleUnauthorizedAccess(error.message);
+        return false;
+    } finally {
+        this.removeLoadingState();
     }
+}
 
     static async initializeApplication() {
         if (!window.initializeApp) {
