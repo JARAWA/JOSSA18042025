@@ -35,6 +35,7 @@ if (!isDevelopment) {
     try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
+        window.db = db;
         console.log("Firebase initialized in production mode (Firestore only)");
     } catch (error) {
         console.error("Error initializing Firebase:", error);
