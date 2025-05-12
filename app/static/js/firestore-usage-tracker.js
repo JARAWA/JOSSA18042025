@@ -67,128 +67,81 @@ class FirestoreUsageTracker {
      * @param {boolean} updateCount - Whether to increment the usage count
      * @returns {Promise<Object>} Usage information
      */
-    static async checkAndUpdateUsage(updateCount = false) {
-        try {
-            // In development mode, use localStorage simulation
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return await UsageLimiter.checkAndUpdateUsage(updateCount);
-            }
-            
-            // Get current user
-            const user = this.getCurrentUser();
-            if (!user || !user.uid || !user.email) {
-                console.warn("User not authenticated, cannot track usage in Firestore");
-                return { 
-                    allowed: false, 
-                    remainingUses: 0, 
-                    message: "Please log in to use this feature" 
-                };
-            }
-            
-            // Check for unlimited emails
-            if (this.UNLIMITED_EMAILS.includes(user.email)) {
-                console.log(`Unlimited access granted for ${user.email}`);
-                return { 
-                    allowed: true, 
-                    remainingUses: Infinity, 
-                    message: "Unlimited access" 
-                };
-            }
-            
-            const today = this.getTodayString();
-            
-            // Reference to the user's usage document
-            const userUsageRef = doc(window.db, "userUsage", user.uid);
-            
-            // Get the current document
-            let userUsageDoc;
-            try {
-                userUsageDoc = await getDoc(userUsageRef);
-            } catch (fetchError) {
-                console.error("Error fetching usage document:", fetchError);
-                // Fallback to localStorage
-                return await UsageLimiter.checkAndUpdateUsage(updateCount);
-            }
-            
-            // Handle the document based on whether it exists
-            let usage = 0;
-            
-            if (!userUsageDoc.exists()) {
-                // Document doesn't exist - create if needed
-                if (this.DEBUG_MODE) console.log(`No usage document found for user ${user.uid}`);
-                
-                if (updateCount) {
-                    usage = 1; // Start with 1 for new document + update
-                    
-                    try {
-                        await setDoc(userUsageRef, {
-                            email: user.email,
-                            josaaApp: {
-                                [today]: usage
-                            },
-                            lastUpdated: new Date().toISOString()
-                        });
-                        console.log(`Created new usage document for ${user.email} with initial count ${usage}`);
-                    } catch (createError) {
-                        console.error("Error creating usage document:", createError);
-                        // Fallback to localStorage
-                        return await UsageLimiter.checkAndUpdateUsage(updateCount);
-                    }
-                }
-            } else {
-                // Document exists - get/update the usage count
-                const userData = userUsageDoc.data();
-                
-                // Get josaaApp data or initialize if not present
-                const josaaApp = userData.josaaApp || {};
-                
-                // Get today's usage or initialize to 0
-                usage = josaaApp[today] || 0;
-                
-                if (updateCount) {
-                    // Increment usage
-                    usage += 1;
-                    
-                    // Update the document
-                    josaaApp[today] = usage;
-                    
-                    try {
-                        await updateDoc(userUsageRef, {
-                            josaaApp: josaaApp,
-                            lastUpdated: new Date().toISOString()
-                        });
-                        console.log(`Updated usage for ${user.email} to ${usage} for ${today}`);
-                    } catch (updateError) {
-                        console.error("Error updating usage document:", updateError);
-                        // Still increment local count but report error
-                        return { 
-                            allowed: true, 
-                            remainingUses: this.DAILY_LIMIT - usage,
-                            message: `Usage tracking partially failed. You have about ${this.DAILY_LIMIT - usage} uses remaining.`,
-                            error: updateError.message
-                        };
-                    }
-                }
-            }
-            
-            // Check if limit reached
-            const remainingUses = Math.max(0, this.DAILY_LIMIT - usage);
-            const allowed = remainingUses > 0;
-            
-            return {
-                allowed,
-                remainingUses,
-                usage,
-                message: allowed 
-                    ? `You have ${remainingUses} generations remaining today` 
-                    : `You have reached the daily limit of ${this.DAILY_LIMIT} generations. Please try again tomorrow.`
+static async checkAndUpdateUsage(updateCount = false) {
+    try {
+        // Get current user
+        const user = this.getCurrentUser();
+        if (!user || !user.uid || !user.email) {
+            console.warn("User not authenticated");
+            return { 
+                allowed: false, 
+                remainingUses: 0, 
+                message: "Please log in to use this feature" 
             };
-        } catch (error) {
-            console.error("Error in Firestore usage tracking:", error);
-            // Fallback to localStorage tracking
+        }
+        
+        // Check for unlimited emails
+        if (this.UNLIMITED_EMAILS.includes(user.email)) {
+            return { allowed: true, remainingUses: Infinity, message: "Unlimited access" };
+        }
+        
+        const today = this.getTodayString();
+        
+        // Reference to user's document in users collection instead of userUsage
+        const userDocRef = doc(window.db, "users", user.uid);
+        
+        // Get the current document
+        let userDoc;
+        try {
+            userDoc = await getDoc(userDocRef);
+        } catch (fetchError) {
+            console.error("Error fetching user document:", fetchError);
             return await UsageLimiter.checkAndUpdateUsage(updateCount);
         }
+        
+        if (!userDoc.exists()) {
+            console.error("User document doesn't exist for", user.uid);
+            return await UsageLimiter.checkAndUpdateUsage(updateCount);
+        }
+        
+        // Handle usage counting
+        let userData = userDoc.data();
+        let usageTracker = userData.usageTracker || {};  // Get or create usage field
+        let usage = (usageTracker[today] || 0);
+        
+        if (updateCount) {
+            usage += 1;
+            
+            // Update the user document with new usage count
+            try {
+                await updateDoc(userDocRef, {
+                    [`usageTracker.${today}`]: usage,
+                    lastUpdated: new Date().toISOString()
+                });
+                console.log(`Updated usage for ${user.email} to ${usage} for ${today}`);
+            } catch (updateError) {
+                console.error("Error updating usage:", updateError);
+                return await UsageLimiter.checkAndUpdateUsage(false);
+            }
+        }
+        
+        // Check if limit reached
+        const remainingUses = Math.max(0, this.DAILY_LIMIT - usage);
+        const allowed = remainingUses > 0;
+        
+        return {
+            allowed,
+            remainingUses,
+            usage,
+            message: allowed 
+                ? `You have ${remainingUses} generations remaining today` 
+                : `You have reached the daily limit of ${this.DAILY_LIMIT} generations. Please try again tomorrow.`
+        };
+    } catch (error) {
+        console.error("Error tracking usage:", error);
+        return await UsageLimiter.checkAndUpdateUsage(false);
     }
+}
     
     /**
      * Display remaining uses in UI
