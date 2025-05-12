@@ -79,13 +79,19 @@ static async checkAndUpdateUsage(updateCount = false) {
             email: user.email
         } : "No user");
         
-        // Check Firebase auth directly
-        if (window.firebase && window.firebase.auth) {
-            const firebaseUser = window.firebase.auth().currentUser;
-            console.log("Firebase Auth current user:", firebaseUser ? {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email
-            } : "No Firebase user");
+        // Check Firebase auth directly - with error handling
+        try {
+            if (window.firebase && typeof window.firebase.auth === 'function') {
+                const firebaseUser = window.firebase.auth().currentUser;
+                console.log("Firebase Auth current user:", firebaseUser ? {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email
+                } : "No Firebase user");
+            } else {
+                console.log("Firebase auth not properly initialized");
+            }
+        } catch (firebaseError) {
+            console.log("Error accessing Firebase auth:", firebaseError.message);
         }
         
         // Check token in session storage
@@ -196,10 +202,14 @@ static getCurrentUser() {
         return window.AuthVerification.user;
     }
     
-    // Then try Firebase Auth
-    if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
-        console.log("✅ Using Firebase auth current user");
-        return window.firebase.auth().currentUser;
+    // Then try Firebase Auth (with error handling)
+    try {
+        if (window.firebase && typeof window.firebase.auth === 'function' && window.firebase.auth().currentUser) {
+            console.log("✅ Using Firebase auth current user");
+            return window.firebase.auth().currentUser;
+        }
+    } catch (e) {
+        console.log("❌ Error accessing Firebase auth:", e.message);
     }
     
     // Try to get from token in sessionStorage
@@ -230,7 +240,6 @@ static getCurrentUser() {
     console.log("❌ Failed to get current user from any source");
     return null;
 }
-    
     /**
      * Display remaining uses in UI
      */
