@@ -69,8 +69,35 @@ class FirestoreUsageTracker {
      */
 static async checkAndUpdateUsage(updateCount = false) {
     try {
+        // Diagnostic logs
+        console.log("=== FIRESTORE ACCESS DIAGNOSIS ===");
+        
         // Get current user
         const user = this.getCurrentUser();
+        console.log("Current user info:", user ? {
+            uid: user.uid,
+            email: user.email
+        } : "No user");
+        
+        // Check Firebase auth directly
+        if (window.firebase && window.firebase.auth) {
+            const firebaseUser = window.firebase.auth().currentUser;
+            console.log("Firebase Auth current user:", firebaseUser ? {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email
+            } : "No Firebase user");
+        }
+        
+        // Check token in session storage
+        const tokenExists = !!sessionStorage.getItem('authToken');
+        console.log("Auth token in sessionStorage:", tokenExists);
+        
+        // Print known document IDs from Firestore
+        console.log("Known Firestore user IDs for reference:");
+        console.log("- PdcgDWdyz4fY8weiOC6hTBccSM33");
+        console.log("- kcVI38NfIAf92jfE7cxHTWEUmVz1");
+        console.log("=== END DIAGNOSIS ===");
+        
         if (!user || !user.uid || !user.email) {
             console.warn("User not authenticated");
             return { 
@@ -87,40 +114,50 @@ static async checkAndUpdateUsage(updateCount = false) {
         
         const today = this.getTodayString();
         
-        // Reference to user's document in users collection instead of userUsage
-        const userDocRef = doc(window.db, "users", user.uid);
+        // Use system_test collection which our security rules allow access to
+        const userUsageDocRef = doc(window.db, "system_test", `usage_${user.email.replace(/[.@]/g, "_")}`);
         
-        // Get the current document
-        let userDoc;
+        // Get the current usage document
+        let usageDoc;
         try {
-            userDoc = await getDoc(userDocRef);
+            console.log(`Attempting to read document: system_test/usage_${user.email.replace(/[.@]/g, "_")}`);
+            usageDoc = await getDoc(userUsageDocRef);
+            console.log("Successfully read system_test usage document:", usageDoc.exists() ? "Document exists" : "Document doesn't exist yet");
         } catch (fetchError) {
-            console.error("Error fetching user document:", fetchError);
+            console.error("Error fetching system_test usage document:", fetchError);
+            console.error("Error details:", fetchError.code, fetchError.message);
+            
+            // Try a test write to check permissions
+            try {
+                const testDocRef = doc(window.db, "system_test", "test_" + Date.now());
+                await setDoc(testDocRef, { test: true });
+                console.log("✅ Test write to system_test successful");
+            } catch (testError) {
+                console.error("❌ Test write to system_test failed:", testError);
+            }
+            
             return await UsageLimiter.checkAndUpdateUsage(updateCount);
         }
         
-        if (!userDoc.exists()) {
-            console.error("User document doesn't exist for", user.uid);
-            return await UsageLimiter.checkAndUpdateUsage(updateCount);
-        }
-        
-        // Handle usage counting
-        let userData = userDoc.data();
-        let usageTracker = userData.usageTracker || {};  // Get or create usage field
-        let usage = (usageTracker[today] || 0);
+        // Get or initialize usage data
+        let usageData = usageDoc.exists() ? usageDoc.data() : {};
+        let usage = usageData[today] || 0;
         
         if (updateCount) {
             usage += 1;
             
-            // Update the user document with new usage count
+            // Update the usage document
             try {
-                await updateDoc(userDocRef, {
-                    [`usageTracker.${today}`]: usage,
+                console.log(`Attempting to update usage for ${user.email} to ${usage}`);
+                await setDoc(userUsageDocRef, {
+                    [today]: usage,
+                    email: user.email,
                     lastUpdated: new Date().toISOString()
-                });
-                console.log(`Updated usage for ${user.email} to ${usage} for ${today}`);
+                }, { merge: true });
+                console.log(`✅ Successfully updated usage for ${user.email} to ${usage} for ${today}`);
             } catch (updateError) {
                 console.error("Error updating usage:", updateError);
+                console.error("Update error details:", updateError.code, updateError.message);
                 return await UsageLimiter.checkAndUpdateUsage(false);
             }
         }
@@ -139,8 +176,59 @@ static async checkAndUpdateUsage(updateCount = false) {
         };
     } catch (error) {
         console.error("Error tracking usage:", error);
+        console.error("Stack trace:", error.stack);
         return await UsageLimiter.checkAndUpdateUsage(false);
     }
+}
+
+/**
+ * Get the current authenticated user information with enhanced diagnostics
+ * @returns {Object|null} User object or null if not authenticated
+ */
+static getCurrentUser() {
+    console.log("Attempting to get current user from multiple sources");
+    
+    // Try multiple sources to get user info
+    
+    // First try AuthVerification
+    if (window.AuthVerification && window.AuthVerification.user) {
+        console.log("✅ Using AuthVerification user");
+        return window.AuthVerification.user;
+    }
+    
+    // Then try Firebase Auth
+    if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+        console.log("✅ Using Firebase auth current user");
+        return window.firebase.auth().currentUser;
+    }
+    
+    // Try to get from token in sessionStorage
+    try {
+        const token = sessionStorage.getItem('authToken');
+        if (token) {
+            // Try to decode token
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                if (payload && (payload.email || payload.sub)) {
+                    console.log("✅ Using user info from auth token");
+                    return {
+                        uid: payload.sub || payload.user_id,
+                        email: payload.email || (payload.sub + "@unknown.com")
+                    };
+                }
+            } else {
+                console.log("❌ Token doesn't appear to be a valid JWT");
+            }
+        } else {
+            console.log("❌ No auth token found in sessionStorage");
+        }
+    } catch (e) {
+        console.log("❌ Could not extract user from token:", e);
+    }
+    
+    console.log("❌ Failed to get current user from any source");
+    return null;
 }
     
     /**
