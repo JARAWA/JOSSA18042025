@@ -112,6 +112,38 @@ F<!DOCTYPE html>
         gap: 10px;
         margin-bottom: 5px;
     }
+            .usage-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #e9ecef;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .unlimited-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .low-usage {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        
+        .medium-usage {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+        
+        #usage-info {
+            margin-left: 15px;
+        }    
     </style>
 </head>
 <body>
@@ -148,6 +180,7 @@ F<!DOCTYPE html>
                     <img src="{{ url_for('static', path='/nextstep_logo.jpeg') }}" alt="Logo" class="h-8" style="height: 32px; width: auto;">
                     <span class="ms-2 fw-bold fs-4">NextStep</span>
                 </a>
+                 <div id="usage-info" class="nav-link"></div>
             </div>
         </div>
     </div>
@@ -244,20 +277,22 @@ F<!DOCTYPE html>
                     </div>
                 </div>
 
-                <div class="button-row">
-                    <div class="button-group">
-                        <button type="submit" id="generate-btn" class="btn btn-primary btn-lg">
-                            <span class="button-content">
-                                <i class="fas fa-search"></i> Generate Preferences
-                            </span>
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        </button>
-                        <button type="button" id="download-btn" class="btn btn-secondary btn-lg" disabled>
-                            <i class="fas fa-download"></i> Download Excel
-                        </button>
-                    </div>
-                    <div id="remaining-uses-counter" class="text-muted small mt-2"></div>
-                </div>
+    <div class="button-row">
+        <div class="button-group">
+            <button type="submit" id="generate-btn" class="btn btn-primary btn-lg" data-usage-limit="true">
+                <span class="button-content">
+                    <i class="fas fa-search"></i> Generate Preferences
+                </span>
+                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            </button>
+            <button type="button" id="download-btn" class="btn btn-secondary btn-lg" disabled>
+                <i class="fas fa-download"></i> Download Excel
+            </button>
+        </div>
+        <!-- This can be removed as we'll use usage-info in nav instead -->
+        <!-- <div id="remaining-uses-counter" class="text-muted small mt-2"></div> -->
+    </div>
+
                 </form>
 
             <!-- Loading Overlay -->
@@ -342,81 +377,105 @@ F<!DOCTYPE html>
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
-    <!-- Authentication initialization script -->
-    <script>
-        // Initialize app - this will be called only after auth verification succeeds
-        window.initializeApp = function() {
-            console.log('App initialized after successful authentication');
-            
-            // Hide loading overlay
-            document.getElementById('auth-loading').style.display = 'none';
-            
-            // Show main content
-            document.getElementById('main-content').style.display = 'block';
-            
-            // Show welcome message if user info is available
-            const alertContainer = document.getElementById('error-alert-container');
-            if (alertContainer && window.AuthVerification && window.AuthVerification.user) {
-                const userEmail = window.AuthVerification.user.email;
-                alertContainer.innerHTML = `
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <strong>Welcome!</strong> You're logged in as ${userEmail}.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-            
-            // Initialize your main application logic here
-            initializeMainApp();
-        };
-        
-        // Function to stop all processes if authentication fails
-        window.stopAllProcesses = function() {
-            console.log('Stopping all app processes due to authentication failure');
-            
-            // Hide loading overlay
-            document.getElementById('auth-loading').style.display = 'none';
-            
-            // Show error message
-            const alertContainer = document.getElementById('error-alert-container');
-            if (alertContainer) {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-            }
-            
-            // Show auth error container
-            document.getElementById('auth-error-container').style.display = 'block';
-            document.getElementById('auth-error-container').innerHTML = `
-                <h2>Authentication Required</h2>
-                <p>Please access this tool through the <a href="https://nextstepedu.co.in">NextStep</a> website.</p>
-            `;
-            
-            // Keep main content hidden
-            document.getElementById('main-content').style.display = 'none';
-        };
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-        // Function to initialize main application logic
-        function initializeMainApp() {
-            // Your existing initialization code here
-            // This is where you would put the code that was previously running on page load
-            console.log('Main application initialized');
+<!-- Authentication initialization script -->
+<script>
+    // Initialize app - this will be called only after auth verification succeeds
+    const originalInitFunction = window.initializeApp;
+    window.initializeApp = async function() {
+        console.log('App initialized after successful authentication');
+        
+        // Hide loading overlay
+        document.getElementById('auth-loading').style.display = 'none';
+        
+        // Show main content
+        document.getElementById('main-content').style.display = 'block';
+        
+        // Show welcome message if user info is available
+        const alertContainer = document.getElementById('error-alert-container');
+        if (alertContainer && window.AuthVerification && window.AuthVerification.user) {
+            const userEmail = window.AuthVerification.user.email;
+            alertContainer.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Welcome!</strong> You're logged in as ${userEmail}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
         }
-    </script>
+        
+        // Initialize your main application logic here
+        initializeMainApp();
+        
+        console.log('App initialized, setting up usage tracking');
+        
+        // Initialize the usage tracking display
+        if (window.FirestoreUsageTracker) {
+            await FirestoreUsageTracker.displayRemainingUses();
+            console.log('Usage tracking initialized');
+            
+            // Apply usage limiting to the generate button
+            const generateBtn = document.getElementById('generate-btn');
+            if (generateBtn) {
+                FirestoreUsageTracker.applyToButton(generateBtn, function(event) {
+                    // This should return true when the generation is successful
+                    // For now, we'll return true to indicate success
+                    return true;
+                });
+            }
+        } else {
+            console.warn('FirestoreUsageTracker not available');
+        }
+    };
     
-    <!-- Authentication verification script -->
-    <script type="module" src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
-    
-    <!-- Main application script -->
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
-    <script type="module" src="{{ url_for('static', path='/js/usage-limiter.js') }}"></script>
+    // Function to stop all processes if authentication fails
+    window.stopAllProcesses = function() {
+        console.log('Stopping all app processes due to authentication failure');
+        
+        // Hide loading overlay
+        document.getElementById('auth-loading').style.display = 'none';
+        
+        // Show error message
+        const alertContainer = document.getElementById('error-alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Authentication Required:</strong> Please log in through the NextStep website to use this feature.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+        
+        // Show auth error container
+        document.getElementById('auth-error-container').style.display = 'block';
+        document.getElementById('auth-error-container').innerHTML = `
+            <h2>Authentication Required</h2>
+            <p>Please access this tool through the <a href="https://nextstepedu.co.in">NextStep</a> website.</p>
+        `;
+        
+        // Keep main content hidden
+        document.getElementById('main-content').style.display = 'none';
+    };
+
+    // Function to initialize main application logic
+    function initializeMainApp() {
+        // Your existing initialization code here
+        // This is where you would put the code that was previously running on page load
+        console.log('Main application initialized');
+    }
+</script>
+
+<!-- Authentication verification script -->
+<script type="module" src="{{ url_for('static', path='/js/auth-verification.js') }}"></script>
+
+<!-- Usage limiter scripts - original and Firestore-based -->
+<script type="module" src="{{ url_for('static', path='/js/usage-limiter.js') }}"></script>
+<script type="module" src="{{ url_for('static', path='/js/firestore-usage-tracker.js') }}"></script>
+
+<!-- Main application script -->
+<script src="{{ url_for('static', path='/js/main.js') }}"></script>
 </body>
 </html>
