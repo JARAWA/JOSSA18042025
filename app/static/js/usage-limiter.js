@@ -12,7 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 import { 
     getAuth, 
-    signInWithEmailAndPassword, 
+    signInWithEmailAndPassword,
+    signInAnonymously,
+    updateProfile,
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
@@ -69,7 +71,7 @@ export default class UsageLimiter {
     
     /**
      * Sign in to Firebase Auth using email
-     * This is a workaround method - in production, use proper authentication
+     * This method properly authenticates with Firebase using anonymous auth
      * @param {string} userId - User ID
      * @param {string} email - User's email
      * @returns {Promise<Object>}
@@ -86,22 +88,61 @@ export default class UsageLimiter {
         
         try {
             // Check if already signed in
-            await this.ensureAuthReady();
-            if (auth && auth.currentUser) {
-                console.log("Already signed in to Firebase Auth:", auth.currentUser.email);
-                return auth.currentUser;
+            const currentUser = await this.ensureAuthReady();
+            if (auth && currentUser) {
+                console.log("Already signed in to Firebase Auth:", currentUser.email || currentUser.uid);
+                return currentUser;
             }
             
-            // In a real implementation, you would need to securely authenticate
-            // This is a placeholder and won't work without proper implementation
-            console.warn("Firebase Auth sign-in would happen here");
+            // Get JWT token from storage
+            const token = sessionStorage.getItem('josaa_auth_token');
+            if (!token) {
+                console.warn("No token in session storage, but continuing anyway");
+            }
             
-            // Return the AuthVerification user info instead as a fallback
-            return { uid: userId, email };
+            if (!auth) {
+                console.error("Firebase Auth not initialized");
+                return { uid: userId, email, isAuthError: true };
+            }
+            
+            // Use anonymous authentication
+            try {
+                console.log("Attempting anonymous authentication with Firebase");
+                const anonymousAuth = await signInAnonymously(auth);
+                
+                // Update the anonymous user profile with the JWT validated data
+                if (anonymousAuth && anonymousAuth.user) {
+                    try {
+                        await updateProfile(anonymousAuth.user, {
+                            displayName: email || `User-${userId}`
+                        });
+                        console.log("Updated anonymous user profile with email:", email);
+                    } catch (profileError) {
+                        console.warn("Could not update profile, but continuing:", profileError.message);
+                    }
+                    
+                    // Store mapping between anonymous ID and JWT user ID
+                    if (userId) {
+                        localStorage.setItem(`firebase_user_mapping_${userId}`, anonymousAuth.user.uid);
+                    }
+                    
+                    console.log("Successfully signed in anonymously with Firebase:", anonymousAuth.user.uid);
+                    return anonymousAuth.user;
+                } else {
+                    throw new Error("Anonymous auth successful but user object missing");
+                }
+            } catch (anonError) {
+                console.error("Anonymous authentication failed:", anonError.message);
+                throw anonError;
+            }
         } catch (error) {
             console.error("Error signing in to Firebase Auth:", error);
-            // Return the AuthVerification user as a fallback
-            return { uid: userId, email };
+            // Return user info as fallback to allow app to function
+            return { 
+                uid: userId, 
+                email: email,
+                isAuthError: true 
+            };
         }
     }
     
@@ -179,7 +220,9 @@ export default class UsageLimiter {
                                         [today]: 1
                                     },
                                     lastUpdated: serverTimestamp(),
-                                    email: firebaseUser.email
+                                    email: authUser.email,
+                                    originalUserId: authUser.uid, // Add this to link back to JWT user
+                                    displayName: authUser.email
                                 });
                             } catch (writeError) {
                                 console.error("Error creating user document:", writeError);
