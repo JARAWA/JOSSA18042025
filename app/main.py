@@ -161,7 +161,7 @@ async def get_genders():
 @app.get("/api/rounds")
 async def get_rounds():
     """Get list of available rounds"""
-    rounds = ["1", "2", "3", "4", "5", "6"]
+    rounds = ["1", "2", "3", "4", "5"]
     return {"rounds": rounds}
 
 @app.post("/api/predict", response_model=PredictionResponse)
