@@ -305,11 +305,12 @@ def generate_preference_list(
         # Add preference numbers
         final_list['Preference'] = range(1, len(final_list) + 1)
 
-        # Prepare final result
+        # Prepare final result - now including Category column
         result_columns = [
             'Preference',
             'Institute',
             'College Type',
+            'Category',  # Added Category column
             'Location',
             'Academic Program Name',
             'Opening Rank',
@@ -320,10 +321,13 @@ def generate_preference_list(
         
         # Add quota and gender columns to the result if they exist
         if "Quota" in final_list.columns:
-            result_columns.insert(3, 'Quota')
+            result_columns.insert(4, 'Quota')  # Insert after Category
         if "Gender" in final_list.columns:
-            result_columns.insert(4, 'Gender')
+            result_columns.insert(5 if "Quota" in final_list.columns else 4, 'Gender')  # Insert after Quota or Category
             
+        # Convert category back to title case for display
+        final_list['Category'] = final_list['Category'].str.title()
+        
         result = final_list[result_columns].rename(columns={
             'Academic Program Name': 'Branch'
         })
