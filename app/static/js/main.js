@@ -438,10 +438,12 @@ function displayResults(data) {
         }
         
         // Add data in the correct order matching the table headers
+        // Updated headers array to include Category
         const headers = [
             'Preference',
             'Institute',
             'College Type',
+            'Category',  // Added Category column
             'Quota',
             'Gender',
             'Location',
